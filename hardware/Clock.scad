@@ -17,12 +17,10 @@ width          =   1.6 ; // [0.8:0.1:5]
 // width of wall between beams
 spacer_width   =   0.8 ; // [0.4:0.1:5]
 // height of beam box
-height         =  13   ; // [8:1:30]
+height         =  13   ; // [8:1:40]
 
-// number of LEDs/beams
+// number of LEDs/beams (shoud be a multiple of parts)
 ws_count       = 60   ; // [3:1:100]
-// radius of LED PCB
-ws_hole_radius =  5   ; // [3:0.5:7]
 // size of LED
 ws_size        =  5.5 ; // [3:0.5:7]
 
@@ -44,22 +42,21 @@ $fs =  1 ;
 
 module ws()
 {
+  rMin = spacer_width / 2 / sin(180/ws_count) ;
+  echo("Minimum Radius", rMin) ;
+  
   // outer
   rO = radius_outer - width ;
-  uO = 2 * PI * rO ;
-  wO = uO / ws_count - spacer_width ;
+  aswO = 2 * asin(spacer_width / 2 / rO) ; // angle of spacer_width
+  awO = (360 - aswO*ws_count) / ws_count ; // angle per beam
+  wO = 2 * rO * tan(awO/2) ;
 
   // inner
-  uMin = spacer_width * ws_count ;
-  rMin = uMin / 2 / PI ;
-
-  rI = (rMin > radius_inner + width) ? rMin : (radius_inner + width) ;
-  uI = 2 * PI * rI ;
-  wI = uI / ws_count - spacer_width ;
-
-  hO = ws_hole_radius / radius_outer * (rO) ;
-  hI = ws_hole_radius / radius_outer * (rI) ;
-
+  rI = (radius_inner + width) > rMin ? radius_inner + width : rMin + 0.1 ;
+  aswI = 2 * asin(spacer_width / 2 / rI) ;
+  awI = (360 - aswI*ws_count) / ws_count ;
+  wI = 2 * rI * tan(awI/2) ;
+  
   da = 360 / ws_count ;
 
   // corona
@@ -68,25 +65,19 @@ module ws()
     for (a = [da/2:da:360])
     rotate([0, 0, a])
     {
-      translate([0, 0, ws_hole_radius])
       rotate([90, 0, 0])
       hull()
       {
-        translate([0, 0, rO])
+        translate([0, height/2, rO])
         union()
         {
           translate([0, height, 0]) cube([wO, 2*height, 0.01], center = true) ;
-          scale([wO/2, hO, 1])
+          scale([wO/2, height/2, 1])
           cylinder(r = 1, h = 0.01, center = true, $fn=30) ;
         }
         
-        translate([0, height-ws_hole_radius, rI])
-        union()
-        {
+        translate([0, height, rI])
           translate([0, height/2, 0]) cube([wI, height, 0.01], center = true) ;
-          scale([wI/2, hI, 1])
-          cylinder(r = 1, h = 0.01, center = true, $fn=30) ;
-        }
       }
     }
 

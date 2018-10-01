@@ -1,11 +1,11 @@
 [Title]
-WS2812 LED Clock or Wheel of Fortune or Something round with 
+WS2812 LED Clock or Wheel of Fortune or ... it's customizable
 
 [Summary]
-Source and Description at [GitHub](https://github.com/MuellerA/Clock).
+Source is also available at [GitHub](https://github.com/MuellerA/LedClock/tree/master/hardware).
 
 [Tags]
-
+WS2812 LED Clock customizable parametric
 
 [Design Tools]
 OpenSCAD

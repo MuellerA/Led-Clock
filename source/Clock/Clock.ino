@@ -1,12 +1,8 @@
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-#include <Adafruit_NeoPixel.h>
+#include <FS.h>
 
-extern "C" {
-#include <user_interface.h>
-}
+#include <Adafruit_NeoPixel.h>
 
 #include "Clock.h"
 
@@ -19,12 +15,6 @@ ESP8266WebServer httpServer ( 80 ) ;
 Settings settings ;
 Time t ;
 Brightness brightness{0} ;
-
-// TODO
-// WiFi Station connect
-// NTP
-// FS save/load settings
-// color::mix
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -55,14 +45,45 @@ unsigned long Brightness::update()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32_t Color::rgb()
+Color::Color() : _r{0}, _g{0}, _b{0}
 {
-  return (_r << 16) | (_g << 8) | (_b << 0) ;
+}
+
+Color::Color(uint8_t r, uint8_t g, uint8_t b) : _r{r}, _g{g}, _b{b}
+{
+}
+
+void Color::set(uint8_t r, uint8_t g, uint8_t b)
+{
+  _r = r ;
+  _g = g ;
+  _b = b ;
+}
+
+uint32_t Color::rgb() const
+{
+  return ((uint32_t)_r << 16) | ((uint32_t)_g << 8) | ((uint32_t)_b << 0) ;
 }
 
 void Color::mix(const Color &c)
 {
-  *this = c ; // todo
+  uint16_t sum ;
+
+  sum = (uint16_t)_r + (uint16_t)c._r ; _r = (sum > 0xff) ? 0xff : sum ;
+  sum = (uint16_t)_g + (uint16_t)c._g ; _g = (sum > 0xff) ? 0xff : sum ;
+  sum = (uint16_t)_b + (uint16_t)c._b ; _b = (sum > 0xff) ? 0xff : sum ;
+}
+
+String Color::toString() const
+{
+  char buff[16] ;
+  sprintf(buff, "#%02x%02x%02x", _r, _g, _b) ;
+  return String(buff) ;
+}
+
+bool Color::operator!() const
+{
+  return !_r && !_g && !_b ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,20 +96,26 @@ void updateClock()
     {
       Color c ;
 
-      if ((i % 5) == 0) c._r = c._g = c._b = 0x0f ;
-      else              c._r = c._g = c._b = 0x00 ;
-
       if (i == ((t._hour%12)*5 + t._minute/12)) c = settings._colHour ;
       if (i == t._minute) c.mix(settings._colMinute) ;
       if (i == t._second) c.mix(settings._colSecond) ;
+
+      if (!c)
+      {
+        if      ((i % 15) == 0) c.set(0x80, 0x80, 0x80) ;
+        else if ((i %  5) == 0) c.set(0x08, 0x08, 0x08) ;
+        else                    c.set(0x00, 0x00, 0x00) ;
+      }
 
       ws2812.setPixelColor(i, c.rgb()) ;
     }
   }
   else
   {
+    static uint8_t i0 ;
+    
     uint32_t rgb ;
-    switch (t._second %3)
+    switch (t._second % 3)
     {
     case 0: rgb = settings._colHour  .rgb() ; break ;
     case 1: rgb = settings._colMinute.rgb() ; break ;
@@ -97,11 +124,9 @@ void updateClock()
 
     for (uint8_t i = 0 ; i < 60 ; ++i)
     {
-      if (i % 5)
-        ws2812.setPixelColor(i%60, 0) ;
-      else
-        ws2812.setPixelColor(i%60, rgb) ;
+      ws2812.setPixelColor(i, ((i % 5) == i0) ? rgb : 0) ;
     }
+    i0 = (i0 + 1) % 5 ;
   }
   ws2812.show() ;
 }
@@ -113,24 +138,28 @@ void updateClock()
 void setup()
 {
   Serial.begin ( 115200 );
-
-  settings.load() ;
-  Serial.printf("\nAP: %s / %s / %d\n", settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
+  Serial.printf("\n") ;
   
-  WiFi.mode(WIFI_OFF) ;
+  SPIFFS.begin() ;
+  
+  settings.load() ;
+  Serial.printf("AP: %s / %s / %d\n", settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
+  
+  WifiSetup() ;
+  
   httpServer.on("/", httpOnRoot) ;
-  httpServer.on("/clock.html", httpOnClock) ;
+  httpServer.on("/settings.html", httpOnSettings) ;
   httpServer.begin() ;
 
   ws2812.begin() ;
-
-  WiFi.softAP(settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void loop()
 {
+  WifiLoop() ;
+  
   static unsigned long lastMs = 0 ;
   unsigned long ms = millis() ;
 

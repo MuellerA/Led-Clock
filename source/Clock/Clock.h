@@ -37,8 +37,14 @@ struct Brightness
 
 struct Color
 {
-  uint32_t rgb() ;
+  Color() ;
+  Color(uint8_t r, uint8_t g, uint8_t b) ;
+  
+  void set(uint8_t r, uint8_t g, uint8_t b) ;
+  uint32_t rgb() const ;
   void mix(const Color &c) ;
+  bool operator!() const ;
+  String toString() const ;
   
   uint8_t _r ;
   uint8_t _g ;
@@ -56,15 +62,17 @@ struct Settings
   void load() ;
   void save() const ;
   
-  // Wifi
+  // Wifi Access Point
   String _apSsid ;
   String _apPsk  ;
   int    _apChan ;
 
-  // NTP
+  // Wifi Station
   String _ssid ;
   String _psk ;
-  String _server { "pool.ntp.org" } ;
+
+  // NTP
+  String _ntp { "pool.ntp.org" } ;
 
   // Color  
   Color _colHour   { 0xff, 0x00, 0x00 } ; // rgb

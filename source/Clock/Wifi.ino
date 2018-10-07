@@ -2,16 +2,11 @@
 // Wifi.ino
 ////////////////////////////////////////////////////////////////////////////////
 
-bool     WifiConnected = false ;
 uint32_t WifiConnectionLostMs ;
 
 void WifiStationConnected(const WiFiEventStationModeConnected &connected)
 {
   Serial.printf("station connected\n") ;
-
-  WifiConnected = true ;
-  WiFi.setAutoReconnect(true) ;
-  WiFi.enableAP(false) ;
 }
 WiFiEventHandler wifiStationConnectedCb ;
 
@@ -22,6 +17,10 @@ void WifiStationGotIP(const WiFiEventStationModeGotIP &gotIp)
   Serial.printf("Address: %d.%d.%d.%d\n", ((gotIp.ip  >>0) & 0xff), ((gotIp.ip  >>8) & 0xff), ((gotIp.ip  >>16) & 0xff), ((gotIp.ip  >>24) & 0xff)) ;
   Serial.printf("Mask   : %d.%d.%d.%d\n", ((gotIp.mask>>0) & 0xff), ((gotIp.mask>>8) & 0xff), ((gotIp.mask>>16) & 0xff), ((gotIp.mask>>24) & 0xff)) ;
   Serial.printf("Gateway: %d.%d.%d.%d\n", ((gotIp.gw  >>0) & 0xff), ((gotIp.gw  >>8) & 0xff), ((gotIp.gw  >>16) & 0xff), ((gotIp.gw  >>24) & 0xff)) ;
+
+  WifiConnected = true ;
+  WiFi.setAutoReconnect(true) ;
+  WiFi.enableAP(false) ;
 }
 WiFiEventHandler wifiStationGotIPCb ;
 

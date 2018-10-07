@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
 #include <FS.h>
 
 #include <Adafruit_NeoPixel.h>
@@ -12,9 +13,32 @@ const int WS2812_PIN = 12 ;
 Adafruit_NeoPixel ws2812 = Adafruit_NeoPixel(WS2812_NUM, WS2812_PIN, NEO_GRB + NEO_KHZ800);
 ESP8266WebServer httpServer ( 80 ) ;
 
+const uint16_t UDP_PORT = 1123 ;
+WiFiUDP udp ;
+Ntp ntp ;
+
 Settings settings ;
 Time t ;
 Brightness brightness{0} ;
+
+bool WifiConnected = false ;
+
+////////////////////////////////////////////////////////////////////////////////
+// util
+
+bool ascDec2bin(char c, uint8_t &d)
+{
+  if (('0' <= c) && (c <= '9')) { d = c - '0'      ; return true ; }
+  return false ;
+}
+
+bool ascHex2bin(char c, uint8_t &h) 
+{
+  if (('0' <= c) && (c <= '9')) { h = c - '0'      ; return true ; }
+  if (('a' <= c) && (c <= 'f')) { h = c - 'a' + 10 ; return true ; }
+  if (('A' <= c) && (c <= 'F')) { h = c - 'A' + 10 ; return true ; }
+  return false ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -45,60 +69,17 @@ unsigned long Brightness::update()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Color::Color() : _r{0}, _g{0}, _b{0}
-{
-}
-
-Color::Color(uint8_t r, uint8_t g, uint8_t b) : _r{r}, _g{g}, _b{b}
-{
-}
-
-void Color::set(uint8_t r, uint8_t g, uint8_t b)
-{
-  _r = r ;
-  _g = g ;
-  _b = b ;
-}
-
-uint32_t Color::rgb() const
-{
-  return ((uint32_t)_r << 16) | ((uint32_t)_g << 8) | ((uint32_t)_b << 0) ;
-}
-
-void Color::mix(const Color &c)
-{
-  uint16_t sum ;
-
-  sum = (uint16_t)_r + (uint16_t)c._r ; _r = (sum > 0xff) ? 0xff : sum ;
-  sum = (uint16_t)_g + (uint16_t)c._g ; _g = (sum > 0xff) ? 0xff : sum ;
-  sum = (uint16_t)_b + (uint16_t)c._b ; _b = (sum > 0xff) ? 0xff : sum ;
-}
-
-String Color::toString() const
-{
-  char buff[16] ;
-  sprintf(buff, "#%02x%02x%02x", _r, _g, _b) ;
-  return String(buff) ;
-}
-
-bool Color::operator!() const
-{
-  return !_r && !_g && !_b ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 void updateClock()
 {
-  if (t._valid)
+  if (t.valid())
   {
     for (unsigned char i = 0 ; i < 60 ; ++i)
     {
       Color c ;
 
-      if (i == ((t._hour%12)*5 + t._minute/12)) c = settings._colHour ;
-      if (i == t._minute) c.mix(settings._colMinute) ;
-      if (i == t._second) c.mix(settings._colSecond) ;
+      if (i == ((t.hour()%12)*5 + t.minute()/12)) c = settings._colHour ;
+      if (i == t.minute()) c.mix(settings._colMinute) ;
+      if (i == t.second()) c.mix(settings._colSecond) ;
 
       if (!c)
       {
@@ -115,7 +96,7 @@ void updateClock()
     static uint8_t i0 ;
     
     uint32_t rgb ;
-    switch (t._second % 3)
+    switch (t.second() % 3)
     {
     case 0: rgb = settings._colHour  .rgb() ; break ;
     case 1: rgb = settings._colMinute.rgb() ; break ;
@@ -139,6 +120,7 @@ void setup()
 {
   Serial.begin ( 115200 );
   Serial.printf("\n") ;
+  //Serial.setDebugOutput(true) ;
   
   SPIFFS.begin() ;
   
@@ -151,6 +133,8 @@ void setup()
   httpServer.on("/settings.html", httpOnSettings) ;
   httpServer.begin() ;
 
+  udp.begin(UDP_PORT) ;
+
   ws2812.begin() ;
 }
 
@@ -158,21 +142,52 @@ void setup()
 
 void loop()
 {
-  WifiLoop() ;
-  
-  static unsigned long lastMs = 0 ;
-  unsigned long ms = millis() ;
-
-  if ((ms - lastMs) > 1000)
+  int udpLen = udp.parsePacket() ;
+  if (udpLen)
   {
-    lastMs = ms ;
-    t.inc() ;
-    brightness.update() ;
+    if ((udp.remotePort() == 123) &&
+        (udpLen == sizeof(Ntp::NtpData)) &&
+        ntp.rx(udp))
+    {
+      uint32_t ts = (ntp._ts >> 32) + (settings._tz * 60) ;
+      uint32_t sec  = ts % 60 ;
+      uint32_t min  = ts / 60 % 60 ;
+      uint32_t hour = ts / 60 / 60 % 24 ;
 
-    updateClock() ;
-    Serial.println(t.toString()) ;
+      t.set(hour, min, sec) ;
+    }
+  }
+  
+  WifiLoop() ;
+
+  // Clock
+  {
+    static unsigned long lastMs = 0 ;
+    unsigned long ms = millis() ;
+
+    if ((ms - lastMs) > 1000)
+    {
+      lastMs = ms ;
+      t.inc() ;
+      brightness.update() ;
+
+      updateClock() ;
+      Serial.println(t.toString()) ;
+    }
   }
 
+  // NTP
+  if (WifiConnected)
+  {
+    static unsigned long lastMs = 0 ;
+    unsigned long ms = millis() ;
+
+    if (((ms - lastMs) > (ntp._delay * 1000)))
+    {
+      lastMs = ms ;
+      ntp.tx(udp, settings._ntp) ;
+    }   
+  }
   
   httpServer.handleClient() ;
 }

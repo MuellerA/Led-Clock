@@ -37,10 +37,9 @@ void Settings::load()
    _psk  = fileRead(cfg) ;
    _ntp  = fileRead(cfg) ;
 
-   // todo
-   /*_colHour   =*/ fileRead(cfg) ;
-   /*_colMinute =*/ fileRead(cfg) ;
-   /*_colSecond =*/ fileRead(cfg) ;
+   _colHour  .fromString(fileRead(cfg)) ;
+   _colMinute.fromString(fileRead(cfg)) ;
+   _colSecond.fromString(fileRead(cfg)) ;
 
    // magic aendern!
  }

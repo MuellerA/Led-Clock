@@ -43,59 +43,15 @@ void httpOnRoot()
                   httpFooter()) ;
 }
 
-bool httpOnSettings_Time(const String &s, uint8_t offset, uint8_t &v, uint8_t max)
-{
-  uint8_t t ;
-
-  if (('0' <= s[offset+0]) && (s[offset+0] <= '9') &&
-      ('0' <= s[offset+1]) && (s[offset+1] <= '9'))
-  {
-    t = (s[offset+0] - '0') * 10 + (s[offset+1] - '0') ;
-    if (t <= max)
-    {
-      v = t ;
-      return true ;
-    }
-  }
-  return false ;
-}
-
-bool ascHex2bin(char c, uint8_t &h)
-{
-  if (('0' <= c) && (c <= '9')) { h = c - '0'      ; return true ; }
-  if (('a' <= c) && (c <= 'f')) { h = c - 'a' + 10 ; return true ; }
-  if (('A' <= c) && (c <= 'F')) { h = c - 'A' + 10 ; return true ; }
-  return false ;
-}
-
-bool httpOnSettings_Color1(const String &s, uint8_t offset, uint8_t &v)
-{
-  uint8_t hi, lo ;
-  if (ascHex2bin(s[offset+0], hi) && ascHex2bin(s[offset+1], lo))
-  {
-    v = (hi << 4) | (lo << 0) ;
-    return true ;
-  }
-  return false ;
-}
-
 bool httpOnSettings_Color(const String &argName, Color &c)
 {
-  uint8_t r, g, b ;
+  Color color ;
 
-  if (httpServer.hasArg(argName))
+  if (httpServer.hasArg(argName) &&
+      color.fromString(httpServer.arg(argName)))
   {
-    String color = httpServer.arg(argName) ;
-
-    if ((color.length() == 7) &&
-        (color[0] == '#') &&
-        httpOnSettings_Color1(color, 1, r) &&
-        httpOnSettings_Color1(color, 3, g) &&
-        httpOnSettings_Color1(color, 5, b))
-    {
-      c.set(r, g, b) ;
-      return true ;
-    }
+    c = color ;
+    return true ;
   }
   return false ;  
 }
@@ -109,27 +65,15 @@ void httpOnSettings()
 
     if (action == "time")
     {
-      String time = httpServer.arg("time") ;
-      uint8_t h, m, s ;
-      
-      if ((time.length() == 8) &&
-          (time[2] == ':') &&
-          (time[5] == ':') &&
-          httpOnSettings_Time(time, 0, h, 23) &&
-          httpOnSettings_Time(time, 3, m, 59) &&
-          httpOnSettings_Time(time, 6, s, 59))
-      {
-        t.set(h, m, s) ;
-      }
+      t.fromString(httpServer.arg("time")) ;
     }
     else if (action == "color")
     {
-      String color = httpServer.arg("color") ;
       Color colHour, colMinute, colSecond ;
 
-      if (httpOnSettings_Color("colorHour"  , colHour  ) &&
-          httpOnSettings_Color("colorMinute", colMinute) &&
-          httpOnSettings_Color("colorSecond", colSecond))
+      if (colHour  .fromString(httpServer.arg("colorHour"  )) &&
+          colMinute.fromString(httpServer.arg("colorMinute")) &&
+          colSecond.fromString(httpServer.arg("colorSecond")))
       {
         settings._colHour   = colHour   ;
         settings._colMinute = colMinute ;

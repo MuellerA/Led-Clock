@@ -51,12 +51,11 @@ String Time::toString()
 
 bool Time::fromString1(const String &s, uint8_t offset, uint8_t &v) const
 {
-  uint8_t t ;
   uint8_t hi, lo ;
 
   if (ascDec2bin(s[offset+0], hi) && ascDec2bin(s[offset+1], lo))
   {
-    t = 10 * hi + lo ;
+    v = 10 * hi + lo ;
     return true ;
   }
   return false ;
@@ -65,7 +64,7 @@ bool Time::fromString1(const String &s, uint8_t offset, uint8_t &v) const
 bool Time::fromString(const String &str)
 {
   uint8_t h, m, s ;
-      
+
   if ((str.length() == 8) &&
       (str[2] == ':') &&
       (str[5] == ':') &&

@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>
 #include <FS.h>
 
@@ -12,6 +13,7 @@ const int WS2812_PIN = 12 ;
 
 Adafruit_NeoPixel ws2812 = Adafruit_NeoPixel(WS2812_NUM, WS2812_PIN, NEO_GRB + NEO_KHZ800);
 ESP8266WebServer httpServer ( 80 ) ;
+ESP8266HTTPUpdateServer httpUpdater;
 
 const uint16_t UDP_PORT = 1123 ;
 WiFiUDP udp ;
@@ -38,6 +40,37 @@ bool ascHex2bin(char c, uint8_t &h)
   if (('a' <= c) && (c <= 'f')) { h = c - 'a' + 10 ; return true ; }
   if (('A' <= c) && (c <= 'F')) { h = c - 'A' + 10 ; return true ; }
   return false ;
+}
+
+bool ascInt2bin(String str, int32_t &val)
+{
+  if (str.length() > 5)
+    return false ;
+
+  uint8_t e = str.length() ;
+  if (e < 1)
+    return false ;
+
+  uint8_t idx = 0 ;
+  bool neg = false ;
+
+  if      (str[0] == '-') { neg = true ; idx = 1 ; }
+  else if (str[0] == '+') {              idx = 1 ; }
+
+  if (e < (idx + 1))
+    return false ;
+  
+  uint32_t v = 0 ;
+  for ( ; idx < e ; ++idx)
+  {
+    uint8_t d ;
+    if (!ascDec2bin(str[idx], d))
+      return false ;
+    v = v*10 + d ;
+  }
+  val = neg ? -v : v ;
+
+  return true ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,6 +164,7 @@ void setup()
   
   httpServer.on("/", httpOnRoot) ;
   httpServer.on("/settings.html", httpOnSettings) ;
+  httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
   httpServer.begin() ;
 
   udp.begin(UDP_PORT) ;
@@ -178,16 +212,7 @@ void loop()
 
   // NTP
   if (WifiConnected)
-  {
-    static unsigned long lastMs = 0 ;
-    unsigned long ms = millis() ;
-
-    if (((ms - lastMs) > (ntp._delay * 1000)))
-    {
-      lastMs = ms ;
-      ntp.tx(udp, settings._ntp) ;
-    }   
-  }
+    ntp.tx(udp, settings._ntp) ;
   
   httpServer.handleClient() ;
 }

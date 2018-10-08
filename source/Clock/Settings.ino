@@ -41,9 +41,16 @@ void Settings::load()
    _colMinute.fromString(fileRead(cfg)) ;
    _colSecond.fromString(fileRead(cfg)) ;
 
+   ascInt2bin(fileRead(cfg), _tz) ;
+   
    // magic aendern!
  }
 
+ if (_ntp.length())
+   ntp.start() ;
+ else
+   ntp.stop() ;
+ 
  cfg.close() ;
 }
 
@@ -61,10 +68,12 @@ void Settings::save() const
   cfg.println(_ssid) ;
   cfg.println(_psk) ;
   cfg.println(_ntp) ;
-
+  
   cfg.println(_colHour  .toString()) ;
   cfg.println(_colMinute.toString()) ;
   cfg.println(_colSecond.toString()) ;
+
+  cfg.println(_tz) ;
 
   // magic aendern!
   

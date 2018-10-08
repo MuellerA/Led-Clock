@@ -120,15 +120,29 @@ struct Ntp
   } ;
 #pragma pop
 
+  enum class State
+  {
+    off     = 0,
+    wait    = 1,
+    success = 2,
+    force   = 3,
+  } ;
+
   NtpData _txData ;
   NtpData _rxData ;
 
+  void start() ;
+  void stop() ;
+  
   bool tx(WiFiUDP &udp, const String &ntpServer) ;
   bool rx(WiFiUDP &udp) ;
 
   void printSerial(const NtpData &data) const ;
 
-  uint32_t _delay  = 20 ;
+  static const int _delayWait    =      10 * 1000 ; // 10 sec
+  static const int _delaySuccess = 30 * 60 * 1000 ; // 30 min
+
+  State    _state  = State::off ;
   
   bool     _next59 = false ;
   bool     _next61 = false ;

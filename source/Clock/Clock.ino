@@ -5,6 +5,9 @@
 #include <FS.h>
 
 #include <Adafruit_NeoPixel.h>
+#include <TimeLib.h>
+#include <Time.h>
+#include <Timezone.h>
 
 #include "Clock.h"
 
@@ -20,10 +23,15 @@ WiFiUDP udp ;
 Ntp ntp ;
 
 Settings settings ;
-Time t ;
+//Time t ;
 Brightness brightness{0} ;
 
 bool WifiConnected = false ;
+
+TimeChangeRule tcr = { "std", First, Sun, Mar, 2, 0 } ;
+Timezone tz(tcr) ;
+
+bool Shutdown = false ;
 
 ////////////////////////////////////////////////////////////////////////////////
 // util
@@ -42,7 +50,8 @@ bool ascHex2bin(char c, uint8_t &h)
   return false ;
 }
 
-bool ascInt2bin(String str, int32_t &val)
+template<typename T>
+bool ascInt2bin(String str, T &val)
 {
   if (str.length() > 5)
     return false ;
@@ -60,7 +69,7 @@ bool ascInt2bin(String str, int32_t &val)
   if (e < (idx + 1))
     return false ;
   
-  uint32_t v = 0 ;
+  T v = 0 ;
   for ( ; idx < e ; ++idx)
   {
     uint8_t d ;
@@ -71,6 +80,19 @@ bool ascInt2bin(String str, int32_t &val)
   val = neg ? -v : v ;
 
   return true ;
+}
+
+template<typename T>
+bool ascInt2bin(String str, T &val, T min, T max)
+{
+  T val0 ;
+  if (ascInt2bin(str, val0) &&
+      (min <= val0) && (val0 <= max))
+  {
+    val = val0 ;
+    return true ;
+  }
+  return false ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,46 +124,52 @@ unsigned long Brightness::update()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void updateClock(uint64_t localTime)
+{
+  uint8_t second = localTime % 60 ;
+  uint8_t minute = localTime / 60 % 60 ;
+  uint8_t hour   = localTime / 60 / 60 % 12 ;
+    
+  for (unsigned char i = 0 ; i < 60 ; ++i)
+  {
+    Color c ;
+
+    if (i == (hour*5 + minute/12)) c = settings._colHour ;
+    if (i == minute)               c.mix(settings._colMinute) ;
+    if (i == second)               c.mix(settings._colSecond) ;
+
+    if (!c)
+    {
+      if      ((i % 15) == 0) c.set(0x18, 0x18, 0x18) ;
+      else if ((i %  5) == 0) c.set(0x08, 0x08, 0x08) ;
+      else                    c.set(0x00, 0x00, 0x00) ;
+    }
+
+    ws2812.setPixelColor(i, c.rgb()) ;
+  }
+  ws2812.show() ;
+}
+
 void updateClock()
 {
-  if (t.valid())
-  {
-    for (unsigned char i = 0 ; i < 60 ; ++i)
-    {
-      Color c ;
-
-      if (i == ((t.hour()%12)*5 + t.minute()/12)) c = settings._colHour ;
-      if (i == t.minute()) c.mix(settings._colMinute) ;
-      if (i == t.second()) c.mix(settings._colSecond) ;
-
-      if (!c)
-      {
-        if      ((i % 15) == 0) c.set(0x80, 0x80, 0x80) ;
-        else if ((i %  5) == 0) c.set(0x08, 0x08, 0x08) ;
-        else                    c.set(0x00, 0x00, 0x00) ;
-      }
-
-      ws2812.setPixelColor(i, c.rgb()) ;
-    }
-  }
-  else
-  {
-    static uint8_t i0 ;
+  static uint8_t cnt ;
+  static uint8_t idx ;
     
-    uint32_t rgb ;
-    switch (t.second() % 3)
-    {
-    case 0: rgb = settings._colHour  .rgb() ; break ;
-    case 1: rgb = settings._colMinute.rgb() ; break ;
-    case 2: rgb = settings._colSecond.rgb() ; break ;
-    }
-
-    for (uint8_t i = 0 ; i < 60 ; ++i)
-    {
-      ws2812.setPixelColor(i, ((i % 5) == i0) ? rgb : 0) ;
-    }
-    i0 = (i0 + 1) % 5 ;
+  uint32_t rgb ;
+  switch (cnt)
+  {
+  case 0: rgb = settings._colHour  .rgb() ; break ;
+  case 1: rgb = settings._colMinute.rgb() ; break ;
+  case 2: rgb = settings._colSecond.rgb() ; break ;
   }
+
+  for (uint8_t i = 0 ; i < 60 ; ++i)
+  {
+    ws2812.setPixelColor(i, ((i % 5) == idx) ? rgb : 0) ;
+  }
+  cnt = (cnt + 1) % 3 ;
+  idx = (idx + 1) % 5 ;
+
   ws2812.show() ;
 }
 
@@ -161,11 +189,7 @@ void setup()
   Serial.printf("AP: %s / %s / %d\n", settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
   
   WifiSetup() ;
-  
-  httpServer.on("/", httpOnRoot) ;
-  httpServer.on("/settings.html", httpOnSettings) ;
-  httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
-  httpServer.begin() ;
+  HttpSetup() ;
 
   udp.begin(UDP_PORT) ;
 
@@ -176,37 +200,61 @@ void setup()
 
 void loop()
 {
+  if (Shutdown)
+  {
+    static uint8_t  cnt  = 0 ;
+    static uint32_t next = 0 ;
+
+    uint32_t now = millis() ;
+    if (now > next)
+    {
+      for (uint8_t i = 0 ; i < 60 ; ++i)
+      {
+        if ((i <= 0 + cnt) || (i >= 60 - cnt))
+          ws2812.setPixelColor(i, 0xff0000) ;
+        else
+          ws2812.setPixelColor(i, 0x000000) ;
+      }
+      ws2812.show() ;
+      cnt = cnt + 1 ;
+      next = now + 20 ;
+
+      if (cnt > 30)
+        ESP.restart() ;
+    }
+    
+    return ;
+  }
+  
   int udpLen = udp.parsePacket() ;
   if (udpLen)
   {
-    if ((udp.remotePort() == 123) &&
-        (udpLen == sizeof(Ntp::NtpData)) &&
-        ntp.rx(udp))
-    {
-      uint32_t ts = (ntp._ts >> 32) + (settings._tz * 60) ;
-      uint32_t sec  = ts % 60 ;
-      uint32_t min  = ts / 60 % 60 ;
-      uint32_t hour = ts / 60 / 60 % 24 ;
-
-      t.set(hour, min, sec) ;
-    }
+    if ((udp.remotePort() == Ntp::port()) &&
+        (udpLen == Ntp::size()))
+      ntp.rx(udp) ;
   }
   
   WifiLoop() ;
 
   // Clock
   {
-    static unsigned long lastMs = 0 ;
-    unsigned long ms = millis() ;
-
-    if ((ms - lastMs) > 1000)
+    if (ntp.valid())
     {
-      lastMs = ms ;
-      t.inc() ;
-      brightness.update() ;
-
-      updateClock() ;
-      Serial.println(t.toString()) ;
+      if (ntp.inc())
+      {
+        uint64_t local = ntp.local() ;
+        updateClock(local) ;
+      }
+    }
+    else
+    {
+      static uint32_t next = 0 ;
+      uint32_t now = millis() ;
+      if (now > next)
+      {
+        updateClock() ;
+        next = now + 333 ;
+      }
     }
   }
 

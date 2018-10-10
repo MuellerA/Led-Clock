@@ -4,9 +4,11 @@
 
 void Ntp::start()
 {
-  _state  = State::force ;
-  _millis = 0 ;
-  _ts     = 0 ;
+  _state       = State::force ;
+  _next59      = false ;
+  _next61      = false ;
+  _lastRequest = 0 ;
+  _tsReceived  = 0 ;
 }
 
 void Ntp::stop()
@@ -14,20 +16,22 @@ void Ntp::stop()
   _state = State::off ;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bool Ntp::tx(WiFiUDP &udp, const String &ntpServer)
 {
-  unsigned long ms = millis() ;
+  unsigned long now = millis() ;
   
   switch (_state)
   {
   case State::off:
     return true ;
   case State::wait:
-    if ((ms - _millis) < _delayWait)
+    if ((now - _lastRequest) < _delayWait)
       return true ;
     break ;
   case State::success:
-    if ((ms - _millis) < _delaySuccess)
+    if ((now - _lastRequest) < _delaySuccess)
       return true ;
     break ;
   case State::force:
@@ -39,12 +43,12 @@ bool Ntp::tx(WiFiUDP &udp, const String &ntpServer)
   Serial.println("Ntp::tx") ;
   memset(&_txData, 0, sizeof(_txData)) ;
 
-  if (_millis)
+  if (_tsReceived)
   {
     uint64_t ts ;
     
-    ts  = _ts ;
-    ts += ((uint64_t)millis() - (uint64_t)_millis) * 4310345ULL ;
+    ts  = _tsReceived ;
+    ts += ((uint64_t)now - (uint64_t)_lastRequest) * 4310345ULL ;
 
     _txData.liVnMode  = 0b00100011 ;
     _txData.originateTsSec  = htonl(ts >> 32) ;
@@ -55,7 +59,7 @@ bool Ntp::tx(WiFiUDP &udp, const String &ntpServer)
     _txData.liVnMode  = 0b11100011 ;
   }
   
-  _millis = ms ;
+  _lastRequest = now ;
   _state = State::wait ;
   
   //printSerial(_txData) ;
@@ -78,9 +82,11 @@ bool Ntp::tx(WiFiUDP &udp, const String &ntpServer)
   return true ;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bool Ntp::rx(WiFiUDP &udp)
 {
-  uint32_t m = millis() ;
+  uint32_t now = millis() ;
 
   Serial.println("Ntp::rx") ;
   if (!udp.read((uint8_t*)&_rxData, sizeof(_rxData)))
@@ -99,9 +105,61 @@ bool Ntp::rx(WiFiUDP &udp)
   uint64_t transmit  = ((uint64_t)ntohl(_rxData.transmitTsSec ) << 32) + ((uint64_t)ntohl(_rxData.transmitTsFrac ) << 0) ;
 
   // keep it simple
-  _ts = transmit ;
+  _tsReceived = transmit ;
+  _current = (_tsReceived >> 32) - 2208988800UL ;
+  _isUtc = true ;
+  _valid = true ;
+  _nextInc = now ; // todo: take transmitTsFrac into account
   
   return true ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool Ntp::inc()
+{
+  if (!_valid)
+    return false ;
+
+    uint32_t ms = millis() ;
+    if (ms < _nextInc)
+      return false ;
+
+    if (_isUtc)
+    {
+      while (ms >= _nextInc)
+      {  
+        uint64_t secondsOfDay = _current % (24 * 60 * 60) ;
+        if      ((secondsOfDay == (24 * 60 * 60 - 2)) && _next59) { _current += 2 ; _next59 = false ; }
+        else if ((secondsOfDay == (24 * 60 * 60 + 0)) && _next61) { _current += 0 ; _next61 = false ; }
+        else                                                      { _current += 1 ;                   }
+        _nextInc += 1000 ;
+      }
+      return true ;
+    }
+    else
+    {
+      while (ms >= _nextInc)
+      {
+        _current += 1 ;
+        _nextInc += 1000 ;
+      }
+      return true ;
+    }
+}
+
+uint64_t Ntp::local()
+{
+  return _isUtc ? tz.toLocal(_current) : _current ;
+}
+
+void Ntp::setLocal(uint64_t local)
+{
+  uint32_t now = millis() ;
+  _current    = local ;
+  _isUtc      = false ;
+  _valid      = true ;
+  _nextInc    = now ;
 }
 
 void Ntp::printSerial(const Ntp::NtpData &data) const
@@ -117,6 +175,46 @@ void Ntp::printSerial(const Ntp::NtpData &data) const
   Serial.printf("Originate %08x.%08x\n", ntohl(data.originateTsSec), ntohl(data.originateTsFrac)) ;
   Serial.printf("Receive   %08x.%08x\n", ntohl(data.receiveTsSec  ), ntohl(data.receiveTsFrac  )) ;
   Serial.printf("Transmit  %08x.%08x\n", ntohl(data.transmitTsSec ), ntohl(data.transmitTsFrac )) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+String Ntp::toLocalString()
+{
+  uint64_t t = local() ;
+  
+  char buff[16] ;
+  sprintf(buff, "%02ld:%02ld:%02ld", (long)(t / 60 / 60 % 12), (long)(t / 60 % 60), (long)(t % 60)) ;
+  return String(buff) ;
+}
+
+bool Ntp::fromLocalString1(const String &s, uint8_t offset, uint8_t &v) const
+{
+  uint8_t hi, lo ;
+
+  if (ascDec2bin(s[offset+0], hi) && ascDec2bin(s[offset+1], lo))
+  {
+    v = 10 * hi + lo ;
+    return true ;
+  }
+  return false ;
+}
+
+bool Ntp::fromLocalString(const String &str)
+{
+  uint8_t h, m, s ;
+
+  if ((str.length() == 8) &&
+      (str[2] == ':') &&
+      (str[5] == ':') &&
+      fromLocalString1(str, 0, h) && (h <= 23) &&
+      fromLocalString1(str, 3, m) && (m <= 59) &&
+      fromLocalString1(str, 6, s) && (s <= 59))
+  {
+    setLocal(h*60*60 + m*60 + s) ;
+    return true ;
+  }
+  return false ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

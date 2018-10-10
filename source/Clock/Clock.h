@@ -2,33 +2,6 @@
 // Clock.h
 ////////////////////////////////////////////////////////////////////////////////
 
-class Time
-{
-public:
-  Time() ;
-  
-  void set(uint8_t hour, uint8_t minute, uint8_t second) ;  
-  void inc() ;
-  String toString() ;
-  bool fromString(const String &str) ;
-  bool valid() const { return _valid ; }
-  uint8_t hour  () const { return _hour   ; }
-  uint8_t minute() const { return _minute ; }
-  uint8_t second() const { return _second ; }
-
-private:
-  bool fromString1(const String &s, uint8_t offset, uint8_t &v) const ;
-  
-  bool    _valid ;
-  uint8_t _hour ;
-  uint8_t _minute ;
-  uint8_t _second ;
-  bool _next59 ; // last minute of day has 59 seconds
-  bool _next61 ; // last minute of day has 61 seconds
-} ;
-
-////////////////////////////////////////////////////////////////////////////////
-
 struct Brightness
 {
   Brightness(unsigned int pin) ;
@@ -86,8 +59,17 @@ struct Settings
   String _psk ;
 
   // NTP
-  String _ntp { "pool.ntp.org" } ;
-  int    _tz  { 120 } ;
+  String   _ntp { "pool.ntp.org" } ;
+  uint8_t  _tzDstMonth       {  Mar } ;
+  uint8_t  _tzDstWeekOfMonth {  Sun } ;
+  uint8_t  _tzDstDayOfWeek   { Last } ;
+  uint8_t  _tzDstHour        {    2 } ;
+  int16_t  _tzDstOffset      {  120 } ;
+  uint8_t  _tzStdMonth       {  Oct } ;
+  uint8_t  _tzStdWeekOfMonth {  Sun } ;
+  uint8_t  _tzStdDayOfWeek   { Last } ;
+  uint8_t  _tzStdHour        {    2 } ;
+  int16_t  _tzStdOffset      {   60 } ;
 
   // Color  
   Color _colHour   { 0xff, 0x00, 0x00 } ; // rgb
@@ -97,7 +79,7 @@ struct Settings
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ntp
+class Ntp
 {
 #pragma pack(push, 1)
   struct NtpData
@@ -128,26 +110,45 @@ struct Ntp
     force   = 3,
   } ;
 
-  NtpData _txData ;
-  NtpData _rxData ;
-
-  void start() ;
-  void stop() ;
+public:
+  void     start() ; // enable transmitting ntp messages
+  void     stop() ;  // disable transmitting ntp messages
   
+  bool     valid()  { return _valid ; } // a time was set (manually or by NTP)
+  bool     active() { return _isUtc ; } // time was received via NTP
+  bool     inc() ; // time changed
+  uint64_t local() ; // current local time
+  void     setLocal(uint64_t local) ;
+  
+  void printSerial(const NtpData &data) const ;
+
+  String toLocalString() ;
+  bool   fromLocalString(const String &str) ;
+  
+  static uint16_t port() { return 123 ; }
+  static uint16_t size() { return sizeof(NtpData) ; }
   bool tx(WiFiUDP &udp, const String &ntpServer) ;
   bool rx(WiFiUDP &udp) ;
 
-  void printSerial(const NtpData &data) const ;
+private:
+  bool fromLocalString1(const String &s, uint8_t offset, uint8_t &v) const ;
 
+private:
   static const int _delayWait    =      10 * 1000 ; // 10 sec
   static const int _delaySuccess = 30 * 60 * 1000 ; // 30 min
 
-  State    _state  = State::off ;
-  
-  bool     _next59 = false ;
-  bool     _next61 = false ;
-  uint64_t _ts     = 0 ; // last received ntp time
-  uint32_t _millis = 0 ; // system time when received
+  NtpData _txData ;
+  NtpData _rxData ;
+
+  State    _state   = State::off ;
+  bool     _valid   = false ;
+  bool     _next59  = false ;
+  bool     _next61  = false ;
+  uint32_t _nextInc     = 0 ; // next millis when inc current time
+  uint32_t _lastRequest = 0 ; // millis of last request
+  uint64_t _tsReceived  = 0 ; // last received ntp time
+  bool     _isUtc    = false ;
+  uint64_t _current  = 0 ;    // current utc or local time
   
 } ;
 

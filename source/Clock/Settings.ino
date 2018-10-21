@@ -41,22 +41,23 @@ void Settings::load()
    _colMinute.fromString(fileRead(cfg)) ;
    _colSecond.fromString(fileRead(cfg)) ;
 
-   ascInt2bin(fileRead(cfg), _tzDstMonth      ) ;
-   ascInt2bin(fileRead(cfg), _tzDstWeekOfMonth) ;
-   ascInt2bin(fileRead(cfg), _tzDstDayOfWeek  ) ;
-   ascInt2bin(fileRead(cfg), _tzDstHour       ) ;
-   ascInt2bin(fileRead(cfg), _tzDstOffset     ) ;
-   ascInt2bin(fileRead(cfg), _tzStdMonth      ) ;
-   ascInt2bin(fileRead(cfg), _tzStdWeekOfMonth) ;
-   ascInt2bin(fileRead(cfg), _tzStdDayOfWeek  ) ;
-   ascInt2bin(fileRead(cfg), _tzStdHour       ) ;
-   ascInt2bin(fileRead(cfg), _tzStdOffset     ) ;
+   uint8_t tmp ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstMonth = (TZ::Month)tmp ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstWeek  = (TZ::Week) tmp ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstDay   = (TZ::Day)  tmp ;
+   ascInt2bin(fileRead(cfg), _tzDstHour  ) ;
+   ascInt2bin(fileRead(cfg), _tzDstOffset) ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdMonth = (TZ::Month)tmp ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdWeek  = (TZ::Week) tmp ;
+   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdDay   = (TZ::Day)  tmp ;
+   ascInt2bin(fileRead(cfg), _tzStdHour  ) ;
+   ascInt2bin(fileRead(cfg), _tzStdOffset) ;
 
    // magic aendern!
-   
-   TimeChangeRule dst = { "dst", _tzDstWeekOfMonth, _tzDstDayOfWeek, _tzDstMonth, _tzDstHour, _tzDstOffset } ;
-   TimeChangeRule std = { "std", _tzStdWeekOfMonth, _tzStdDayOfWeek, _tzStdMonth, _tzStdHour, _tzStdOffset } ;
-   tz = Timezone(dst, std) ;
+
+   tz.resetRules() ;
+   tz.addRule( { _tzDstMonth, _tzDstWeek, _tzDstDay, _tzDstHour, _tzDstOffset } ) ;
+   tz.addRule( { _tzStdMonth, _tzStdWeek, _tzStdDay, _tzStdHour, _tzStdOffset } ) ;
  }
 
  if (_ntp.length())
@@ -86,16 +87,16 @@ void Settings::save() const
   cfg.println(_colMinute.toString()) ;
   cfg.println(_colSecond.toString()) ;
 
-  cfg.println(_tzDstMonth      ) ;
-  cfg.println(_tzDstWeekOfMonth) ;
-  cfg.println(_tzDstDayOfWeek  ) ;
-  cfg.println(_tzDstHour       ) ;
-  cfg.println(_tzDstOffset     ) ;
-  cfg.println(_tzStdMonth      ) ;
-  cfg.println(_tzStdWeekOfMonth) ;
-  cfg.println(_tzStdDayOfWeek  ) ;
-  cfg.println(_tzStdHour       ) ;
-  cfg.println(_tzStdOffset     ) ;
+  cfg.println((uint8_t)_tzDstMonth ) ;
+  cfg.println((uint8_t)_tzDstWeek  ) ;
+  cfg.println((uint8_t)_tzDstDay   ) ;
+  cfg.println(         _tzDstHour  ) ;
+  cfg.println(         _tzDstOffset) ;
+  cfg.println((uint8_t)_tzStdMonth ) ;
+  cfg.println((uint8_t)_tzStdWeek  ) ;
+  cfg.println((uint8_t)_tzStdDay   ) ;
+  cfg.println(         _tzStdHour  ) ;
+  cfg.println(         _tzStdOffset) ;
 
   // magic aendern!
   

@@ -59,17 +59,17 @@ struct Settings
   String _psk ;
 
   // NTP
-  String   _ntp { "pool.ntp.org" } ;
-  uint8_t  _tzDstMonth       {  Mar } ;
-  uint8_t  _tzDstWeekOfMonth {  Sun } ;
-  uint8_t  _tzDstDayOfWeek   { Last } ;
-  uint8_t  _tzDstHour        {    2 } ;
-  int16_t  _tzDstOffset      {  120 } ;
-  uint8_t  _tzStdMonth       {  Oct } ;
-  uint8_t  _tzStdWeekOfMonth {  Sun } ;
-  uint8_t  _tzStdDayOfWeek   { Last } ;
-  uint8_t  _tzStdHour        {    2 } ;
-  int16_t  _tzStdOffset      {   60 } ;
+  String    _ntp { "pool.ntp.org" } ;
+  TZ::Month _tzDstMonth  { TZ::Month:: Mar } ;
+  TZ::Week  _tzDstWeek   { TZ::Week:: Last } ;
+  TZ::Day   _tzDstDay    { TZ::Day::   Sun } ;
+  uint8_t   _tzDstHour   {               2 } ;
+  int16_t   _tzDstOffset {             120 } ;
+  TZ::Month _tzStdMonth  { TZ::Month:: Oct } ;
+  TZ::Week  _tzStdWeek   { TZ::Week:: Last } ;
+  TZ::Day   _tzStdDay    { TZ::Day::   Sun } ;
+  uint8_t   _tzStdHour   {               2 } ;
+  int16_t   _tzStdOffset {              60 } ;
 
   // Color  
   Color _colHour   { 0xff, 0x00, 0x00 } ; // rgb
@@ -93,8 +93,8 @@ class Ntp
     uint32_t referenceId ;
     uint32_t referenceTsSec ; // 16
     uint32_t referenceTsFrac ;
-    uint32_t originateTsSec ; // 24
-    uint32_t originateTsFrac ;
+    uint32_t originTsSec ;    // 24
+    uint32_t originTsFrac ;
     uint32_t receiveTsSec ;   // 32
     uint32_t receiveTsFrac ;
     uint32_t transmitTsSec ;  // 40
@@ -147,6 +147,7 @@ private:
   uint32_t _nextInc     = 0 ; // next millis when inc current time
   uint32_t _lastRequest = 0 ; // millis of last request
   uint64_t _tsReceived  = 0 ; // last received ntp time
+  uint64_t _tsTransmit  = 0 ; // last tx timestamp
   bool     _isUtc    = false ;
   uint64_t _current  = 0 ;    // current utc or local time
   

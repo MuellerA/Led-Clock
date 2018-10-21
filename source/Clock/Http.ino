@@ -49,7 +49,7 @@ void httpOnRoot()
 {
   httpServer.send(200, "text/html",
                   httpHeader("Uhr") +
-                  String("<p><span style=\"font-size: large\">") + ntp.toLocalString() + String("</span>") +
+                  String("<p><span style=\"font-size: large\">") + ntp.toLocalString() + String("</span> ") +
                   String(ntp.active() ? "(NTP)" : "(manual)") + String("</p>\n") +
                   String("<p style=\"font-size: small\"><a href=\"/settings.html\">Einstellungen</a></p>\n") +
                   String("<p style=\"font-size: small\"><a href=\"/update\">Aktualisieren</a></p>\n") +
@@ -79,87 +79,87 @@ bool httpOnSettings_Color(const String &argName, Color &c)
   return false ;  
 }
 
-bool httpOnSettings_Month(const String &month, uint8_t &value)
+bool httpOnSettings_Month(const String &month, TZ::Month &value)
 {
-  if (month == "Januar"   ) { value = Jan ; return true ; }
-  if (month == "Februar"  ) { value = Feb ; return true ; }
-  if (month == "März"     ) { value = Mar ; return true ; }
-  if (month == "April"    ) { value = Apr ; return true ; }
-  if (month == "Mail"     ) { value = May ; return true ; }
-  if (month == "Juni"     ) { value = Jun ; return true ; }
-  if (month == "Juli"     ) { value = Jul ; return true ; }
-  if (month == "August"   ) { value = Aug ; return true ; }
-  if (month == "September") { value = Sep ; return true ; }
-  if (month == "Oktober"  ) { value = Oct ; return true ; }
-  if (month == "November" ) { value = Nov ; return true ; }
-  if (month == "Dezember" ) { value = Dec ; return true ; }
+  if (month == "Januar"   ) { value = TZ::Month::Jan ; return true ; }
+  if (month == "Februar"  ) { value = TZ::Month::Feb ; return true ; }
+  if (month == "März"     ) { value = TZ::Month::Mar ; return true ; }
+  if (month == "April"    ) { value = TZ::Month::Apr ; return true ; }
+  if (month == "Mail"     ) { value = TZ::Month::May ; return true ; }
+  if (month == "Juni"     ) { value = TZ::Month::Jun ; return true ; }
+  if (month == "Juli"     ) { value = TZ::Month::Jul ; return true ; }
+  if (month == "August"   ) { value = TZ::Month::Aug ; return true ; }
+  if (month == "September") { value = TZ::Month::Sep ; return true ; }
+  if (month == "Oktober"  ) { value = TZ::Month::Oct ; return true ; }
+  if (month == "November" ) { value = TZ::Month::Nov ; return true ; }
+  if (month == "Dezember" ) { value = TZ::Month::Dec ; return true ; }
   return false ;
 }
 
-bool httpOnSettings_WeekOfMonth(const String &weekOfMonth, uint8_t &value)
+bool httpOnSettings_Week(const String &week, TZ::Week &value)
 {
-  if (weekOfMonth == "Erster"  ) { value = First  ; return true ; }
-  if (weekOfMonth == "Zweiter" ) { value = Second ; return true ; }
-  if (weekOfMonth == "Dritter" ) { value = Third  ; return true ; }
-  if (weekOfMonth == "Vierter" ) { value = Fourth ; return true ; }
-  if (weekOfMonth == "Letzter" ) { value = Last   ; return true ; }
+  if (week == "Erster"  ) { value = TZ::Week::First  ; return true ; }
+  if (week == "Zweiter" ) { value = TZ::Week::Second ; return true ; }
+  if (week == "Dritter" ) { value = TZ::Week::Third  ; return true ; }
+  if (week == "Vierter" ) { value = TZ::Week::Fourth ; return true ; }
+  if (week == "Letzter" ) { value = TZ::Week::Last   ; return true ; }
   return false ;
 }
 
-bool httpOnSettings_DayOfWeek(const String &dayOfWeek, uint8_t &value)
+bool httpOnSettings_Day(const String &day, TZ::Day &value)
 {
-  if (dayOfWeek == "Sonntag"    ) { value = Sun ; return true ; }
-  if (dayOfWeek == "Montag"     ) { value = Mon ; return true ; }
-  if (dayOfWeek == "Dienstag"   ) { value = Tue ; return true ; }
-  if (dayOfWeek == "Mittwoch"   ) { value = Wed ; return true ; }
-  if (dayOfWeek == "Donnerstag" ) { value = Thu ; return true ; }
-  if (dayOfWeek == "Freitag"    ) { value = Fri ; return true ; }
-  if (dayOfWeek == "Samstag"    ) { value = Sat ; return true ; }
+  if (day == "Sonntag"    ) { value = TZ::Day::Sun ; return true ; }
+  if (day == "Montag"     ) { value = TZ::Day::Mon ; return true ; }
+  if (day == "Dienstag"   ) { value = TZ::Day::Tue ; return true ; }
+  if (day == "Mittwoch"   ) { value = TZ::Day::Wed ; return true ; }
+  if (day == "Donnerstag" ) { value = TZ::Day::Thu ; return true ; }
+  if (day == "Freitag"    ) { value = TZ::Day::Fri ; return true ; }
+  if (day == "Samstag"    ) { value = TZ::Day::Sat ; return true ; }
 }
 
-String inputMonth(const char *name, uint8_t month)
+String inputMonth(const char *name, TZ::Month month)
 {
   return
     String("<select name=\"") +
     String(name) +
-    String("\" size=\"1\"><option"     ) + String(month == Jan ? " selected" : "") +
-    String(">Januar</option><option"   ) + String(month == Feb ? " selected" : "") +
-    String(">Februar</option><option"  ) + String(month == Mar ? " selected" : "") +
-    String(">März</option><option"     ) + String(month == Apr ? " selected" : "") +
-    String(">April</option><option"    ) + String(month == May ? " selected" : "") +
-    String(">Mai</option><option"      ) + String(month == Jun ? " selected" : "") +
-    String(">Juni</option><option"     ) + String(month == Jul ? " selected" : "") +
-    String(">Juli</option><option"     ) + String(month == Aug ? " selected" : "") +
-    String(">August</option><option"   ) + String(month == Sep ? " selected" : "") +
-    String(">September</option><option") + String(month == Oct ? " selected" : "") +
-    String(">Oktober</option><option"  ) + String(month == Nov ? " selected" : "") +
-    String(">November</option><option" ) + String(month == Dec ? " selected" : "") +
+    String("\" size=\"1\"><option"     ) + String(month == TZ::Month::Jan ? " selected" : "") +
+    String(">Januar</option><option"   ) + String(month == TZ::Month::Feb ? " selected" : "") +
+    String(">Februar</option><option"  ) + String(month == TZ::Month::Mar ? " selected" : "") +
+    String(">März</option><option"     ) + String(month == TZ::Month::Apr ? " selected" : "") +
+    String(">April</option><option"    ) + String(month == TZ::Month::May ? " selected" : "") +
+    String(">Mai</option><option"      ) + String(month == TZ::Month::Jun ? " selected" : "") +
+    String(">Juni</option><option"     ) + String(month == TZ::Month::Jul ? " selected" : "") +
+    String(">Juli</option><option"     ) + String(month == TZ::Month::Aug ? " selected" : "") +
+    String(">August</option><option"   ) + String(month == TZ::Month::Sep ? " selected" : "") +
+    String(">September</option><option") + String(month == TZ::Month::Oct ? " selected" : "") +
+    String(">Oktober</option><option"  ) + String(month == TZ::Month::Nov ? " selected" : "") +
+    String(">November</option><option" ) + String(month == TZ::Month::Dec ? " selected" : "") +
     String(">Dezember</option></select>") ;
 }
-String inputWeekOfMonth(const char *name, uint8_t weekOfMonth)
+String inputWeek(const char *name, TZ::Week week)
 {
   return
     String("<select name=\"") +
     String(name) +
-    String("\" size=\"1\"><option"  ) + String(weekOfMonth == First  ? " selected" : "") +
-    String(">Erste</option><option" ) + String(weekOfMonth == Second ? " selected" : "") +
-    String(">Zweite</option><option") + String(weekOfMonth == Third  ? " selected" : "") +
-    String(">Dritte</option><option") + String(weekOfMonth == Fourth ? " selected" : "") +
-    String(">Vierte</option><option") + String(weekOfMonth == Last   ? " selected" : "") +
-    String(">Letzte</option></select>") ;
+    String("\" size=\"1\"><option"   ) + String(week == TZ::Week::First  ? " selected" : "") +
+    String(">Erster</option><option" ) + String(week == TZ::Week::Second ? " selected" : "") +
+    String(">Zweiter</option><option") + String(week == TZ::Week::Third  ? " selected" : "") +
+    String(">Dritter</option><option") + String(week == TZ::Week::Fourth ? " selected" : "") +
+    String(">Vierter</option><option") + String(week == TZ::Week::Last   ? " selected" : "") +
+    String(">Letzter</option></select>") ;
 }
-String inputDayOfWeek(const char *name, uint8_t dayOfWeek)
+String inputDay(const char *name, TZ::Day day)
 {
   return
     String("<select name=\"") +
     String(name) +
-    String("\" size=\"1\"><option"      ) + String(dayOfWeek == Sun ? " selected" : "") +
-    String(">Sonntag</option><option"   ) + String(dayOfWeek == Mon ? " selected" : "") +
-    String(">Montag</option><option"    ) + String(dayOfWeek == Tue ? " selected" : "") +
-    String(">Dienstag</option><option"  ) + String(dayOfWeek == Wed ? " selected" : "") +
-    String(">Mittwoch</option><option"  ) + String(dayOfWeek == Thu ? " selected" : "") +
-    String(">Donnerstag</option><option") + String(dayOfWeek == Fri ? " selected" : "") +
-    String(">Freitag</option><option"   ) + String(dayOfWeek == Sat ? " selected" : "") +
+    String("\" size=\"1\"><option"      ) + String(day == TZ::Day::Sun ? " selected" : "") +
+    String(">Sonntag</option><option"   ) + String(day == TZ::Day::Mon ? " selected" : "") +
+    String(">Montag</option><option"    ) + String(day == TZ::Day::Tue ? " selected" : "") +
+    String(">Dienstag</option><option"  ) + String(day == TZ::Day::Wed ? " selected" : "") +
+    String(">Mittwoch</option><option"  ) + String(day == TZ::Day::Thu ? " selected" : "") +
+    String(">Donnerstag</option><option") + String(day == TZ::Day::Fri ? " selected" : "") +
+    String(">Freitag</option><option"   ) + String(day == TZ::Day::Sat ? " selected" : "") +
     String(">Samstag</option></select>") ;
 }
 template<typename T>
@@ -210,16 +210,16 @@ void httpOnSettings()
       String ssid = httpServer.arg("ssid") ;
       String psk  = httpServer.arg("psk" ) ;
       String ntp  = httpServer.arg("ntp" ) ;
-      String tzDstMonth       = httpServer.arg("tzDstMonth"      ) ;
-      String tzDstWeekOfMonth = httpServer.arg("tzDstWeekOfMonth") ;
-      String tzDstDayOfWeek   = httpServer.arg("tzDstDayOfWeek"  ) ;
-      String tzDstHour        = httpServer.arg("tzDstHour"       ) ;
-      String tzDstOffset      = httpServer.arg("tzDstOffset"     ) ;
-      String tzStdMonth       = httpServer.arg("tzStdMonth"      ) ;
-      String tzStdWeekOfMonth = httpServer.arg("tzStdWeekOfMonth") ;
-      String tzStdDayOfWeek   = httpServer.arg("tzStdDayOfWeek"  ) ;
-      String tzStdHour        = httpServer.arg("tzStdHour"       ) ;
-      String tzStdOffset      = httpServer.arg("tzStdOffset"     ) ;
+      String tzDstMonth  = httpServer.arg("tzDstMonth"      ) ;
+      String tzDstWeek   = httpServer.arg("tzDstWeekOfMonth") ;
+      String tzDstDay    = httpServer.arg("tzDstDayOfWeek"  ) ;
+      String tzDstHour   = httpServer.arg("tzDstHour"       ) ;
+      String tzDstOffset = httpServer.arg("tzDstOffset"     ) ;
+      String tzStdMonth  = httpServer.arg("tzStdMonth"      ) ;
+      String tzStdWeek   = httpServer.arg("tzStdWeekOfMonth") ;
+      String tzStdDay    = httpServer.arg("tzStdDayOfWeek"  ) ;
+      String tzStdHour   = httpServer.arg("tzStdHour"       ) ;
+      String tzStdOffset = httpServer.arg("tzStdOffset"     ) ;
 
       if (ssid.length() && (ssid != settings._ssid))
       {
@@ -242,41 +242,41 @@ void httpOnSettings()
         ntpDirty      = true ;
       }
 
-      uint8_t dstMonth       ;
-      uint8_t dstWeekOfMonth ;
-      uint8_t dstDayOfWeek   ;
-      uint8_t dstHour        ;
-      int16_t dstOffset      ;
-      uint8_t stdMonth       ;
-      uint8_t stdWeekOfMonth ;
-      uint8_t stdDayOfWeek   ;
-      uint8_t stdHour        ;
-      int16_t stdOffset      ;
-      if (httpOnSettings_Month      (tzDstMonth      , dstMonth      ) &&
-          httpOnSettings_WeekOfMonth(tzDstWeekOfMonth, dstWeekOfMonth) &&
-          httpOnSettings_DayOfWeek  (tzDstDayOfWeek  , dstDayOfWeek  ) &&
-          ascInt2bin                (tzDstHour       , dstHour       , (uint8_t)0   , (uint8_t) 23) &&
-          ascInt2bin                (tzDstOffset     , dstOffset     , (int16_t)-840, (int16_t)840) &&
-          httpOnSettings_Month      (tzStdMonth      , stdMonth      ) &&
-          httpOnSettings_WeekOfMonth(tzStdWeekOfMonth, stdWeekOfMonth) &&
-          httpOnSettings_DayOfWeek  (tzStdDayOfWeek  , stdDayOfWeek  ) &&
-          ascInt2bin                (tzStdHour       , stdHour       , (uint8_t)0   , (uint8_t) 23) &&
-          ascInt2bin                (tzStdOffset     , stdOffset     , (int16_t)-840, (int16_t)840))
+      TZ::Month dstMonth       ;
+      TZ::Week  dstWeek        ;
+      TZ::Day   dstDay         ;
+      uint8_t   dstHour        ;
+      int16_t   dstOffset      ;
+      TZ::Month stdMonth       ;
+      TZ::Week  stdWeek        ;
+      TZ::Day   stdDay         ;
+      uint8_t   stdHour        ;
+      int16_t   stdOffset      ;
+      if (httpOnSettings_Month(tzDstMonth , dstMonth ) &&
+          httpOnSettings_Week (tzDstWeek  , dstWeek  ) &&
+          httpOnSettings_Day  (tzDstDay   , dstDay   ) &&
+          ascInt2bin          (tzDstHour  , dstHour  , (uint8_t)0   , (uint8_t) 23) &&
+          ascInt2bin          (tzDstOffset, dstOffset, (int16_t)-840, (int16_t)840) &&
+          httpOnSettings_Month(tzStdMonth , stdMonth ) &&
+          httpOnSettings_Week (tzStdWeek  , stdWeek  ) &&
+          httpOnSettings_Day  (tzStdDay   , stdDay   ) &&
+          ascInt2bin          (tzStdHour  , stdHour  , (uint8_t)0   , (uint8_t) 23) &&
+          ascInt2bin          (tzStdOffset, stdOffset, (int16_t)-840, (int16_t)840))
       {
-        settings._tzDstMonth       = dstMonth       ;
-        settings._tzDstWeekOfMonth = dstWeekOfMonth ;
-        settings._tzDstDayOfWeek   = dstDayOfWeek   ;
-        settings._tzDstHour        = dstHour        ;
-        settings._tzDstOffset      = dstOffset      ;
-        settings._tzStdMonth       = stdMonth       ;
-        settings._tzStdWeekOfMonth = stdWeekOfMonth ;
-        settings._tzStdDayOfWeek   = stdDayOfWeek   ;
-        settings._tzStdHour        = stdHour        ;
-        settings._tzStdOffset      = stdOffset      ;
+        settings._tzDstMonth  = dstMonth  ;
+        settings._tzDstWeek   = dstWeek   ;
+        settings._tzDstDay    = dstDay    ;
+        settings._tzDstHour   = dstHour   ;
+        settings._tzDstOffset = dstOffset ;
+        settings._tzStdMonth  = stdMonth  ;
+        settings._tzStdWeek   = stdWeek   ;
+        settings._tzStdDay    = stdDay    ;
+        settings._tzStdHour   = stdHour   ;
+        settings._tzStdOffset = stdOffset ;
 
-        TimeChangeRule dst = { "dst", dstWeekOfMonth, dstDayOfWeek, dstMonth, dstHour, dstOffset } ;
-        TimeChangeRule std = { "std", stdWeekOfMonth, stdDayOfWeek, stdMonth, stdHour, stdOffset } ;
-        tz = Timezone(dst, std) ;
+        tz.resetRules() ;
+        tz.addRule( { dstMonth, dstWeek, dstDay, dstHour, dstOffset } ) ;
+        tz.addRule( { stdMonth, stdWeek, stdDay, stdHour, stdOffset } ) ;
 
         settingsDirty = true ;
         ntpDirty = true ; // todo
@@ -343,9 +343,9 @@ void httpOnSettings()
                          "  <tr><th>Start Sommerzeit</th><td>") +
                   inputMonth("tzDstMonth", settings._tzDstMonth) +
                   String("</td><td>") +
-                  inputWeekOfMonth("tzDstWeekOfMonth", settings._tzDstWeekOfMonth) +
+                  inputWeek("tzDstWeekOfMonth", settings._tzDstWeek) +
                   String("</td><td>") +
-                  inputDayOfWeek("tzDstDayOfWeek", settings._tzDstDayOfWeek) +
+                  inputDay("tzDstDayOfWeek", settings._tzDstDay) +
                   String("</td><td>") +
                   inputInt("tzDstHour", settings._tzDstHour, (uint8_t)0, (uint8_t)23) +
                   String("</td><td>") +
@@ -354,9 +354,9 @@ void httpOnSettings()
                          "  <th>Ende Sommerzeit</th><td>") +
                   inputMonth("tzStdMonth", settings._tzStdMonth) +
                   String("</td><td>") +
-                  inputWeekOfMonth("tzStdWeekOfMonth", settings._tzStdWeekOfMonth) +
+                  inputWeek("tzStdWeekOfMonth", settings._tzStdWeek) +
                   String("</td><td>") +
-                  inputDayOfWeek("tzStdDayOfWeek", settings._tzStdDayOfWeek) +
+                  inputDay("tzStdDayOfWeek", settings._tzStdDay) +
                   String("</td><td>") +
                   inputInt("tzStdHour", settings._tzStdHour, (uint8_t)0, (uint8_t)23) +
                   String("</td><td>") +

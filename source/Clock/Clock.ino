@@ -5,16 +5,15 @@
 #include <FS.h>
 
 #include <Adafruit_NeoPixel.h>
-#include <TimeLib.h>
-#include <Time.h>
-#include <Timezone.h>
 
+#include "timezone.h"
 #include "Clock.h"
 
 const int WS2812_NUM = 60 ;
 const int WS2812_PIN = 12 ;
 
 Adafruit_NeoPixel ws2812 = Adafruit_NeoPixel(WS2812_NUM, WS2812_PIN, NEO_GRB + NEO_KHZ800);
+
 ESP8266WebServer httpServer ( 80 ) ;
 ESP8266HTTPUpdateServer httpUpdater;
 
@@ -23,13 +22,11 @@ WiFiUDP udp ;
 Ntp ntp ;
 
 Settings settings ;
-//Time t ;
 Brightness brightness{0} ;
 
 bool WifiConnected = false ;
 
-TimeChangeRule tcr = { "std", First, Sun, Mar, 2, 0 } ;
-Timezone tz(tcr) ;
+TZ::TimeZone tz ;
 
 bool Shutdown = false ;
 
@@ -211,7 +208,7 @@ void loop()
       for (uint8_t i = 0 ; i < 60 ; ++i)
       {
         if ((i <= 0 + cnt) || (i >= 60 - cnt))
-          ws2812.setPixelColor(i, 0xff0000) ;
+          ws2812.setPixelColor(i, 0x0f0000) ;
         else
           ws2812.setPixelColor(i, 0x000000) ;
       }

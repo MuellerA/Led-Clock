@@ -43,22 +43,16 @@ bool Ntp::tx(WiFiUDP &udp, const String &ntpServer)
   Serial.println("Ntp::tx") ;
   memset(&_txData, 0, sizeof(_txData)) ;
 
+  _txData.liVnMode  = 0b00100011 ;
+
   if (_tsReceived)
   {
-    uint64_t ts ;
-    
-    ts  = _tsReceived ;
-    ts += ((uint64_t)now - (uint64_t)_lastRequest) * 4310345ULL ;
+    _tsTransmit  = _tsReceived ;
+    _tsTransmit += ((uint64_t)now - (uint64_t)_lastRequest) * 4310345ULL ;
 
-    _txData.liVnMode  = 0b00100011 ;
-    _txData.originateTsSec  = htonl(ts >> 32) ;
-    _txData.originateTsFrac = htonl(ts >>  0) ;
+    _txData.transmitTsSec  = htonl(_tsTransmit >> 32) ;
+    _txData.transmitTsFrac = htonl(_tsTransmit >>  0) ;
   }
-  else
-  {
-    _txData.liVnMode  = 0b11100011 ;
-  }
-  
   _lastRequest = now ;
   _state = State::wait ;
   
@@ -100,13 +94,20 @@ bool Ntp::rx(WiFiUDP &udp)
   _next59 = _rxData.liVnMode & 0x80 ;
   _next61 = _rxData.liVnMode & 0x40 ;
   
-  //uint64_t originate = ((uint64_t)ntohl(_rxData.originateTsSec) << 32) + ((uint64_t)ntohl(_rxData.originateTsFrac) << 0) ;
+  uint64_t origin = ((uint64_t)ntohl(_rxData.originTsSec) << 32) + ((uint64_t)ntohl(_rxData.originTsFrac) << 0) ;
+  if (origin != _tsTransmit)
+    return false ;
+  
   //uint64_t receive   = ((uint64_t)ntohl(_rxData.receiveTsSec  ) << 32) + ((uint64_t)ntohl(_rxData.receiveTsFrac  ) << 0) ;
   uint64_t transmit  = ((uint64_t)ntohl(_rxData.transmitTsSec ) << 32) + ((uint64_t)ntohl(_rxData.transmitTsFrac ) << 0) ;
 
   // keep it simple
   _tsReceived = transmit ;
-  _current = (_tsReceived >> 32) - 2208988800UL ;
+  uint64_t utc = (_tsReceived >> 32) ; // ntp pico second to utc second conversion
+  if (utc < 0x80000000) // assume ntp era 1
+    utc += 0x100000000ULL ;
+  utc -= 2208988800UL ;
+  _current = utc ;
   _isUtc = true ;
   _valid = true ;
   _nextInc = now ; // todo: take transmitTsFrac into account
@@ -150,7 +151,7 @@ bool Ntp::inc()
 
 uint64_t Ntp::local()
 {
-  return _isUtc ? tz.toLocal(_current) : _current ;
+  return _isUtc ? tz.utcToLoc(_current) : _current ;
 }
 
 void Ntp::setLocal(uint64_t local)
@@ -172,7 +173,7 @@ void Ntp::printSerial(const Ntp::NtpData &data) const
   Serial.printf("Root Dispersion %08x\n", ntohl(data.rootDispersion)) ;
   Serial.printf("Reference Id    %08x\n", ntohl(data.referenceId)) ;
   Serial.printf("Reference %08x.%08x\n", ntohl(data.referenceTsSec), ntohl(data.referenceTsFrac)) ;
-  Serial.printf("Originate %08x.%08x\n", ntohl(data.originateTsSec), ntohl(data.originateTsFrac)) ;
+  Serial.printf("Origin    %08x.%08x\n", ntohl(data.originTsSec   ), ntohl(data.originTsFrac   )) ;
   Serial.printf("Receive   %08x.%08x\n", ntohl(data.receiveTsSec  ), ntohl(data.receiveTsFrac  )) ;
   Serial.printf("Transmit  %08x.%08x\n", ntohl(data.transmitTsSec ), ntohl(data.transmitTsFrac )) ;
 }
@@ -184,7 +185,7 @@ String Ntp::toLocalString()
   uint64_t t = local() ;
   
   char buff[16] ;
-  sprintf(buff, "%02ld:%02ld:%02ld", (long)(t / 60 / 60 % 12), (long)(t / 60 % 60), (long)(t % 60)) ;
+  sprintf(buff, "%02ld:%02ld:%02ld", (long)(t / 60 / 60 % 24), (long)(t / 60 % 60), (long)(t % 60)) ;
   return String(buff) ;
 }
 

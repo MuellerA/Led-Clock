@@ -4,65 +4,387 @@
 
 void HttpSetup()
 {
-  httpServer.on("/", httpOnRoot) ;
+  httpServer.on("/", httpOnHome) ;
   httpServer.on("/settings.html", httpOnSettings) ;
-  httpServer.on("/reset", httpOnReset) ;
+  httpServer.on("/reboot", httpOnReboot) ;
   httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
   httpServer.begin() ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-String httpHeader(const String &title)
+class HttpBuff
 {
-  return
-    String("<!DOCTYPE html>\n"
-           "<html>\n"
-           " <head>\n"
-           "  <meta charset=\"utf-8\"/>\n"
-           "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
-           "  <title>") +
-    title +
-    String("</title>\n"
-           " <style>\n"
-           ".border\n"
-           "{\n"
-           "  border-width: 1px;\n"
-           "  border-color: black;\n"
-           "  border-style: solid;\n"
-           "  padding: 5px;\n"
-           "  margin: 8px 0px;\n"
-           "}\n"
-           " </style>\n"
-           " </head>\n"
-           " <body>\n"
-           "  <h1>") + title + String("</h1>\n") ;
-}
-String httpFooter()
+public:
+  HttpBuff()
+  {
+    _buff.reserve(512) ;
+  }
+  ~HttpBuff()
+  {
+    if (_buff.length())
+      httpServer.sendContent(_buff) ;
+  }
+  void operator+=(char c)
+  {
+    _buff += c ;
+    if (_buff.length() == 512)
+    {
+      httpServer.sendContent(_buff) ;
+      _buff = "" ;
+    }
+  }
+  void operator+=(const String &s)
+  {
+    _buff += s ;
+    if (_buff.length() >= 512)
+    {
+      httpServer.sendContent(_buff) ;
+      _buff = "" ;
+    }
+  }
+
+private:
+  String _buff ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct Translate
 {
-  return
-    String(" </body>\n"
-           "</html>\n") ;
+  String _lang[(unsigned int)Lang::Size] ;
+  const String& operator()() const { return _lang[(unsigned int)settings._lang] ; }
+  bool operator==(const String &cmp)
+  {
+    for (auto l : _lang)
+      if (l == cmp)
+        return true ;
+    return false ;
+  }
+  bool operator==(const char *cmp)
+  {
+    for (auto l : _lang)
+      if (l == cmp)
+        return true ;
+    return false ;
+  }
+} ;
+
+Translate transJanuary   { "January"  , "Januar"    } ;
+Translate transFebruary  { "February" , "Februar"   } ;
+Translate transMarch     { "March"    , "März"      } ;
+Translate transApril     { "April"    , "April"     } ;
+Translate transMay       { "May"      , "Mail"      } ;
+Translate transJune      { "June"     , "Juni"      } ;
+Translate transJuly      { "July"     , "Juli"      } ;
+Translate transAugust    { "August"   , "August"    } ;
+Translate transSeptember { "September", "September" } ;
+Translate transOctober   { "October"  , "Oktober"   } ;
+Translate transNovember  { "November" , "November"  } ;
+Translate transDecember  { "December" , "Dezember"  } ;
+
+Translate transSunday    { "Sunday"   , "Sonntag"   } ;
+Translate transMonday    { "Monday"   , "Montag"    } ;
+Translate transTuesday   { "Tuesday"  , "Dienstag"  } ;
+Translate transWednesday { "Wednesday", "Mittwoch"  } ;
+Translate transThursday  { "Thursday" , "Donnerstag"} ;
+Translate transFriday    { "Friday"   , "Freitag"   } ;
+Translate transSaturday  { "Saturday" , "Samstag"   } ;
+
+Translate transFirst     { "First"    , "Erster"    } ;
+Translate transSecond    { "Second"   , "Zweiter"   } ;
+Translate transThird     { "Third"    , "Dritter"   } ;
+Translate transFourth    { "Fourth"   , "Vierter"   } ;
+Translate transLast      { "Last"     , "Letzter"   } ;
+
+Translate translateWords[] =
+  {
+    { "Clock"           , "Uhr"                     },
+    { "Home"            , "Startseite"              },
+    { "Settings"        , "Einstellungen"           },
+    { "Update"          , "Aktualisieren"           },
+    { "Reboot"          , "Neustart"                },
+    { "manual"          , "manuell"                 },
+    { "Save Settings"   , "Einstellungen speichern" },
+    { "Save Color"      , "Farbe speichern"         },
+    { "Save Time"       , "Zeit speichern"          },
+    { "Save NTP"        , "NTP speichern"           },
+    
+    { "WiFi"            , "WLAN"                },
+    { "Color"           , "Farbe"               },
+    { "Hour"            , "Stunde"              },
+    { "Minute"          , "Minute"              },
+    { "Second"          , "Sekunde"             },
+    { "Time"            , "Zeit"                },
+    { "Timezone"        , "Zeitzone"            },
+    { "Daylight Saving Time", "Sommerzeit"      },
+    { "Start"           , "Start"               },
+    { "End"             , "Ende"                },
+    { "Month"           , "Monat"               },
+    { "Week"            , "Woche"               },
+    { "Day"             , "Tag"                 },
+    { "Hour"            , "Stunde"              },
+    { "Offset to UTC (min)" , "Abstand zu UTC (Min)" },
+
+    transJanuary,
+    transFebruary,
+    transMarch,
+    transApril,
+    transMay,
+    transJune,
+    transJuly,
+    transAugust,
+    transSeptember,
+    transOctober,
+    transNovember,
+    transDecember,
+                  
+    transSunday,
+    transMonday,
+    transTuesday,
+    transWednesday,
+    transThursday,
+    transFriday,
+    transSaturday,
+                  
+    transFirst,
+    transSecond,
+    transThird,
+    transFourth,
+    transLast,
+} ;
+
+String translate(const String &orig)
+{
+  for (const Translate &t : translateWords)
+    if (t._lang[0] == orig) return t() ;
+
+  if      (orig == "@NtpManual"   ) return ntp.active() ? "(NTP)" : translate("(manual)") ;
+  else if (orig == "@NtpTime"     ) return ntp.toLocalString() ;
+  else if (orig == "@Ntp"         ) return settings._ntp ;
+  else if (orig == "@Ssid"        ) return settings._ssid ;
+  else if (orig == "@ColHour"     ) return settings._colHour.toString() ;
+  else if (orig == "@ColMinute"   ) return settings._colMinute.toString() ;
+  else if (orig == "@ColSecond"   ) return settings._colSecond.toString() ;
+  else if (orig == "@DstMonth"    ) return inputMonth("tzDstMonth" , settings._tzDstMonth ) ;
+  else if (orig == "@DstWeek"     ) return inputWeek ("tzDstWeek"  , settings._tzDstWeek  ) ;
+  else if (orig == "@DstDay"      ) return inputDay  ("tzDstDay"   , settings._tzDstDay   ) ;
+  else if (orig == "@DstHour"     ) return inputInt  ("tzDstHour"  , settings._tzDstHour  , (uint8_t)   0, (uint8_t) 23) ;
+  else if (orig == "@DstOffset"   ) return inputInt  ("tzDstOffset", settings._tzDstOffset, (int16_t)-840, (int16_t)840) ;
+  else if (orig == "@StdMonth"    ) return inputMonth("tzStdMonth" , settings._tzStdMonth ) ;
+  else if (orig == "@StdWeek"     ) return inputWeek ("tzStdWeek"  , settings._tzStdWeek  ) ;
+  else if (orig == "@StdDay"      ) return inputDay  ("tzStdDay"   , settings._tzStdDay   ) ;
+  else if (orig == "@StdHour"     ) return inputInt  ("tzStdHour"  , settings._tzStdHour  , (uint8_t)   0, (uint8_t) 23) ;
+  else if (orig == "@StdOffset"   ) return inputInt  ("tzStdOffset", settings._tzStdOffset, (int16_t)-840, (int16_t)840) ;
+
+  return orig ;
 }
 
-void httpOnRoot()
+String translateHome    (const String &orig) { return (orig == "Page") ? translate("Home"    ) : translate(orig) ; }
+String translateReboot  (const String &orig) { return (orig == "Page") ? translate("Reboot"  ) : translate(orig) ; }
+String translateSettings(const String &orig) { return (orig == "Page") ? translate("Settings") : translate(orig) ; }
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+void httpTemplateReplace_P(PGM_P temp, HttpBuff &httpBuff, unsigned int &idx, std::function<String(const String&)> translate)
 {
-  httpServer.send(200, "text/html",
-                  httpHeader("Uhr") +
-                  String("<p><span style=\"font-size: large\">") + ntp.toLocalString() + String("</span> ") +
-                  String(ntp.active() ? "(NTP)" : "(manual)") + String("</p>\n") +
-                  String("<p style=\"font-size: small\"><a href=\"/settings.html\">Einstellungen</a></p>\n") +
-                  String("<p style=\"font-size: small\"><a href=\"/update\">Aktualisieren</a></p>\n") +
-                  String("<p style=\"font-size: small\"><a href=\"/reset\">Neu starten</a></p>\n") +
-                  httpFooter()) ;
+  char ch ;
+  String buff ;
+  buff.reserve(32) ;
+
+  while (true)
+  {
+    ch = (char) pgm_read_byte(temp + idx++) ;
+
+    switch (ch)
+    {
+    case 0:
+      httpBuff += buff ;
+      --idx ;
+      return ;
+
+    case '%':
+      httpBuff += translate(buff) ;
+      return ;
+
+    default:
+      {
+        buff += ch ;
+        if (buff.length() == 64)
+        {
+          httpBuff += buff ;
+          return ;
+        }
+      }
+      break ;
+    }
+  }
 }
 
-void httpOnReset()
+void httpTemplate_P(PGM_P temp, std::function<String(const String&)> translate)
 {
-  httpServer.send(200, "text/html",
-                  httpHeader("Uhr") +
-                  String("<p>Starte neu...</p>\n") +
-                  httpFooter()) ;
+  unsigned int idx = 0 ;
+  char ch ;
+
+  HttpBuff httpBuff ;
+
+  while (true)
+  {
+    ch = (char) pgm_read_byte(temp + idx++) ;
+
+    switch (ch)
+    {
+    case 0:
+      return ;
+
+    case '%':
+      if ((char)pgm_read_byte(temp + idx) == '%')
+      {
+        httpBuff += '%' ;
+        idx++ ;
+        break ;
+      }
+
+      httpTemplateReplace_P(temp, httpBuff, idx, translate) ;
+      break ;
+
+    default:
+      httpBuff += ch ;
+      break ;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char HttpHeader_P[] PROGMEM =
+  "<!DOCTYPE html>\n"
+  "<html>\n"
+  " <head>\n"
+  "  <meta charset=\"utf-8\"/>\n"
+  "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
+  "  <title>%Clock% - %Page%</title>\n"
+  " <style>\n"
+  ".border\n"
+  "{\n"
+  "  border-width: 1px;\n"
+  "  border-color: black;\n"
+  "  border-style: solid;\n"
+  "  padding: 5px;\n"
+  "  margin: 8px 0px;\n"
+  "}\n"
+  " </style>\n"
+  " </head>\n"
+  " <body>\n"
+  "  <h1>%Clock% - %Page%</h1>\n" ;
+
+const char HttpFooter_P[] PROGMEM =
+  " </body>\n"
+  "</html>\n" ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char HttpHome_P[] PROGMEM =
+  "<p style=\"font-size: small\">"
+  "<a href=\"/settings.html\">%Settings%</a> <a href=\"/update\">%Update%</a> <a href=\"/reboot\">%Reboot%</a>"
+  "</p>\n"
+  "<div>\n"
+  "<span class=\"border\" style=\"font-size: 500%%\">%@NtpTime%</span> %@NtpManual%"
+  "</div>\n" ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char HttpReboot_P[] PROGMEM =
+  "<p>Starte neu...</p>\n" ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+const char HttpSettings_P[] PROGMEM =
+  "<p style=\"font-size: small\"><a href=\"/\">%Home%</a></p>\n"
+  "\n"
+  "<div class=\"border\">\n" // Language
+  "<h2>Sprache / Language</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<button type=\"submit\" name=\"action\" value=\"deutsch\">Deutsch</button>\n"
+  "<button type=\"submit\" name=\"action\" value=\"english\">English</button>\n"
+  "</form>\n"
+  "</div>\n"
+  "\n"
+  "<div class=\"border\">\n" // WiFi
+  "<h2>%WiFi%</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<table>\n"
+  "  <tr><td>SSID</td><td><input type=\"text\" name=\"ssid\" size=\"32\" value=\"%@Ssid%\"/></td></tr>\n"
+  "  <tr><td>PSK</td><td><input type=\"password\" name=\"psk\" size=\"32\" value=\"\"/></td></tr>\n"
+  "</table>\n"
+  "<button type=\"submit\" name=\"action\" value=\"wifi\">%Save Settings%</button>\n"
+  "</form>\n"
+  "</div>\n"
+  "\n"
+  "<div class=\"border\">\n" // Color
+  "<h2>%Color%</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<table>\n"
+  " <tr><td>%Hour%</td><td><input type=\"color\" name=\"colorHour\" value=\"%@ColHour%\"/></td></tr>\n"
+  " <tr><td>%Minute%</td><td><input type=\"color\" name=\"colorMinute\" value=\"%@ColMinute%\"/></td></tr>\n"
+  " <tr><td>%Second%</td><td><input type=\"color\" name=\"colorSecond\" value=\"%@ColSecond%\"/></td></tr>\n"
+  "</table>\n"
+  "<button type=\"submit\" name=\"action\" value=\"color\">%Save Color%</button>\n"
+  "</form>\n"
+  "</div>\n"
+  "\n"
+  "<div class=\"border\">\n" // Timezone
+  "<h2>%Time% (NTP)</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<table>\n"
+  "  <tr><td>NTP</td><td><input type=\"text\" name=\"ntp\" size=\"32\" value=\"%@Ntp%\" placeholder=\"pool.ntp.org\"/></td></tr>\n"
+  "</table>\n"
+  "<table>\n"
+  "  <tr><th>%Timezone%</th><th>%Month%</th><th>%Week%</th><th>%Day%</th><th>%Hour%</th><th>%Offset to UTC (min)%</th></tr>\n"
+  "  <tr><th>%Start% %Daylight Saving Time%</th><td>%@DstMonth%</td><td>%@DstWeek%</td><td>%@DstDay%</td><td>%@DstHour%</td><td>%@DstOffset%</td></tr>\n"
+  "  <tr><th>%End% %Daylight Saving Time%</th><td>%@StdMonth%</td><td>%@StdWeek%</td><td>%@StdDay%</td><td>%@StdHour%</td><td>%@StdOffset%</td></tr>\n"
+  "</table>\n"
+  "<button type=\"submit\" name=\"action\" value=\"timezone\">%Save NTP%</button>\n"
+  "</form>\n"
+  "</div>\n"
+  "\n"
+  "<div class=\"border\">\n" // Time
+  "<h2>%Time% (%manual%)</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<input type=\"time\" name=\"time\" step=\"1\" value=\"%@NtpTime%\"/>\n"
+  "<button type=\"submit\" name=\"action\" value=\"time\">%Save Time%</button>\n"
+  "</form>\n"
+  "</div>\n" ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+void httpOk()
+{
+  httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  httpServer.sendHeader("Content-Type","text/html",true);
+  httpServer.sendHeader("Cache-Control","no-cache");
+  httpServer.send(200);
+}
+
+void httpOnHome()
+{
+  httpOk() ;
+  httpTemplate_P(HttpHeader_P, translateHome) ;
+  httpTemplate_P(HttpHome_P  , translateHome) ;
+  httpTemplate_P(HttpFooter_P, translateHome) ;
+  httpServer.sendContent("") ;
+}
+
+void httpOnReboot()
+{
+  httpOk() ;
+  httpTemplate_P(HttpHeader_P, translateReboot) ;
+  httpTemplate_P(HttpReboot_P, translateReboot) ;
+  httpTemplate_P(HttpFooter_P, translateReboot) ;
+  httpServer.sendContent("") ;
+
   Shutdown = true ;
 }
 
@@ -76,97 +398,109 @@ bool httpOnSettings_Color(const String &argName, Color &c)
     c = color ;
     return true ;
   }
-  return false ;  
+  return false ;
 }
 
 bool httpOnSettings_Month(const String &month, TZ::Month &value)
 {
-  if (month == "Januar"   ) { value = TZ::Month::Jan ; return true ; }
-  if (month == "Februar"  ) { value = TZ::Month::Feb ; return true ; }
-  if (month == "März"     ) { value = TZ::Month::Mar ; return true ; }
-  if (month == "April"    ) { value = TZ::Month::Apr ; return true ; }
-  if (month == "Mail"     ) { value = TZ::Month::May ; return true ; }
-  if (month == "Juni"     ) { value = TZ::Month::Jun ; return true ; }
-  if (month == "Juli"     ) { value = TZ::Month::Jul ; return true ; }
-  if (month == "August"   ) { value = TZ::Month::Aug ; return true ; }
-  if (month == "September") { value = TZ::Month::Sep ; return true ; }
-  if (month == "Oktober"  ) { value = TZ::Month::Oct ; return true ; }
-  if (month == "November" ) { value = TZ::Month::Nov ; return true ; }
-  if (month == "Dezember" ) { value = TZ::Month::Dec ; return true ; }
+  if (transJanuary   == month) { value = TZ::Month::Jan ; return true ; }
+  if (transFebruary  == month) { value = TZ::Month::Feb ; return true ; }
+  if (transMarch     == month) { value = TZ::Month::Mar ; return true ; }
+  if (transApril     == month) { value = TZ::Month::Apr ; return true ; }
+  if (transMay       == month) { value = TZ::Month::May ; return true ; }
+  if (transJune      == month) { value = TZ::Month::Jun ; return true ; }
+  if (transJuly      == month) { value = TZ::Month::Jul ; return true ; }
+  if (transAugust    == month) { value = TZ::Month::Aug ; return true ; }
+  if (transSeptember == month) { value = TZ::Month::Sep ; return true ; }
+  if (transOctober   == month) { value = TZ::Month::Oct ; return true ; }
+  if (transNovember  == month) { value = TZ::Month::Nov ; return true ; }
+  if (transDecember  == month) { value = TZ::Month::Dec ; return true ; }
   return false ;
 }
 
 bool httpOnSettings_Week(const String &week, TZ::Week &value)
 {
-  if (week == "Erster"  ) { value = TZ::Week::First  ; return true ; }
-  if (week == "Zweiter" ) { value = TZ::Week::Second ; return true ; }
-  if (week == "Dritter" ) { value = TZ::Week::Third  ; return true ; }
-  if (week == "Vierter" ) { value = TZ::Week::Fourth ; return true ; }
-  if (week == "Letzter" ) { value = TZ::Week::Last   ; return true ; }
+  if (transFirst  == week) { value = TZ::Week::First  ; return true ; }
+  if (transSecond == week) { value = TZ::Week::Second ; return true ; }
+  if (transThird  == week) { value = TZ::Week::Third  ; return true ; }
+  if (transFourth == week) { value = TZ::Week::Fourth ; return true ; }
+  if (transLast   == week) { value = TZ::Week::Last   ; return true ; }
   return false ;
 }
 
 bool httpOnSettings_Day(const String &day, TZ::Day &value)
 {
-  if (day == "Sonntag"    ) { value = TZ::Day::Sun ; return true ; }
-  if (day == "Montag"     ) { value = TZ::Day::Mon ; return true ; }
-  if (day == "Dienstag"   ) { value = TZ::Day::Tue ; return true ; }
-  if (day == "Mittwoch"   ) { value = TZ::Day::Wed ; return true ; }
-  if (day == "Donnerstag" ) { value = TZ::Day::Thu ; return true ; }
-  if (day == "Freitag"    ) { value = TZ::Day::Fri ; return true ; }
-  if (day == "Samstag"    ) { value = TZ::Day::Sat ; return true ; }
+  if (transSunday    == day) { value = TZ::Day::Sun ; return true ; }
+  if (transMonday    == day) { value = TZ::Day::Mon ; return true ; }
+  if (transTuesday   == day) { value = TZ::Day::Tue ; return true ; }
+  if (transWednesday == day) { value = TZ::Day::Wed ; return true ; }
+  if (transThursday  == day) { value = TZ::Day::Thu ; return true ; }
+  if (transFriday    == day) { value = TZ::Day::Fri ; return true ; }
+  if (transSaturday  == day) { value = TZ::Day::Sat ; return true ; }
+}
+
+template<typename T>
+const String inputOption(const String &opt, T a, T b)
+{
+  static const String optionBegin { "<option" } ;
+  static const String optionEnd   { "</option>" } ;
+  static const String selected    { " selected>" } ;
+  static const String notSelected { ">" } ;
+
+  return
+    optionBegin +
+    ((a == b) ? selected : notSelected) +
+    opt +
+    optionEnd ;
 }
 
 String inputMonth(const char *name, TZ::Month month)
 {
   return
-    String("<select name=\"") +
-    String(name) +
-    String("\" size=\"1\"><option"     ) + String(month == TZ::Month::Jan ? " selected" : "") +
-    String(">Januar</option><option"   ) + String(month == TZ::Month::Feb ? " selected" : "") +
-    String(">Februar</option><option"  ) + String(month == TZ::Month::Mar ? " selected" : "") +
-    String(">März</option><option"     ) + String(month == TZ::Month::Apr ? " selected" : "") +
-    String(">April</option><option"    ) + String(month == TZ::Month::May ? " selected" : "") +
-    String(">Mai</option><option"      ) + String(month == TZ::Month::Jun ? " selected" : "") +
-    String(">Juni</option><option"     ) + String(month == TZ::Month::Jul ? " selected" : "") +
-    String(">Juli</option><option"     ) + String(month == TZ::Month::Aug ? " selected" : "") +
-    String(">August</option><option"   ) + String(month == TZ::Month::Sep ? " selected" : "") +
-    String(">September</option><option") + String(month == TZ::Month::Oct ? " selected" : "") +
-    String(">Oktober</option><option"  ) + String(month == TZ::Month::Nov ? " selected" : "") +
-    String(">November</option><option" ) + String(month == TZ::Month::Dec ? " selected" : "") +
-    String(">Dezember</option></select>") ;
+    String("<select name=\"") + String(name) + String("\" size=\"1\">") +
+    inputOption(transJanuary()  , month, TZ::Month::Jan) +
+    inputOption(transFebruary() , month, TZ::Month::Feb) +
+    inputOption(transMarch()    , month, TZ::Month::Mar) +
+    inputOption(transApril()    , month, TZ::Month::Apr) +
+    inputOption(transMay()      , month, TZ::Month::May) +
+    inputOption(transJune()     , month, TZ::Month::Jun) +
+    inputOption(transJuly()     , month, TZ::Month::Jul) +
+    inputOption(transAugust()   , month, TZ::Month::Aug) +
+    inputOption(transSeptember(), month, TZ::Month::Sep) +
+    inputOption(transOctober()  , month, TZ::Month::Oct) +
+    inputOption(transNovember() , month, TZ::Month::Nov) +
+    inputOption(transDecember() , month, TZ::Month::Dec) +
+    String("</select>") ;
 }
 String inputWeek(const char *name, TZ::Week week)
 {
   return
-    String("<select name=\"") +
-    String(name) +
-    String("\" size=\"1\"><option"   ) + String(week == TZ::Week::First  ? " selected" : "") +
-    String(">Erster</option><option" ) + String(week == TZ::Week::Second ? " selected" : "") +
-    String(">Zweiter</option><option") + String(week == TZ::Week::Third  ? " selected" : "") +
-    String(">Dritter</option><option") + String(week == TZ::Week::Fourth ? " selected" : "") +
-    String(">Vierter</option><option") + String(week == TZ::Week::Last   ? " selected" : "") +
-    String(">Letzter</option></select>") ;
+    String("<select name=\"") + String(name) + String("\" size=\"1\">") +
+    inputOption(transFirst() , week, TZ::Week::First ) +
+    inputOption(transSecond(), week, TZ::Week::Second) +
+    inputOption(transThird() , week, TZ::Week::Third ) +
+    inputOption(transFourth(), week, TZ::Week::Fourth) +
+    inputOption(transLast()  , week, TZ::Week::Last  ) +
+    String("</select>") ;
 }
 String inputDay(const char *name, TZ::Day day)
 {
   return
-    String("<select name=\"") +
-    String(name) +
-    String("\" size=\"1\"><option"      ) + String(day == TZ::Day::Sun ? " selected" : "") +
-    String(">Sonntag</option><option"   ) + String(day == TZ::Day::Mon ? " selected" : "") +
-    String(">Montag</option><option"    ) + String(day == TZ::Day::Tue ? " selected" : "") +
-    String(">Dienstag</option><option"  ) + String(day == TZ::Day::Wed ? " selected" : "") +
-    String(">Mittwoch</option><option"  ) + String(day == TZ::Day::Thu ? " selected" : "") +
-    String(">Donnerstag</option><option") + String(day == TZ::Day::Fri ? " selected" : "") +
-    String(">Freitag</option><option"   ) + String(day == TZ::Day::Sat ? " selected" : "") +
-    String(">Samstag</option></select>") ;
+    String("<select name=\"") + String(name) + String("\" size=\"1\">") +
+    inputOption(transSunday()   , day, TZ::Day::Sun) +
+    inputOption(transMonday()   , day, TZ::Day::Mon) +
+    inputOption(transTuesday()  , day, TZ::Day::Tue) +
+    inputOption(transWednesday(), day, TZ::Day::Wed) +
+    inputOption(transThursday() , day, TZ::Day::Thu) +
+    inputOption(transFriday()   , day, TZ::Day::Fri) +
+    inputOption(transSaturday() , day, TZ::Day::Sat) +
+    String("</select>") ;
 }
 template<typename T>
 String inputInt(const char *name, T val, T min, T max)
 {
   return
-    String("<input type=\"number\" name=\"") +
+    String("<input type=\"number\" size=\"3\" name=\"") +
     String(name) +
     String("\" min=\"") +
     String(min) +
@@ -187,9 +521,34 @@ void httpOnSettings()
 
     Serial.printf("settings: %s\n", action.c_str()) ;
 
-    if (action == "time")
+    if (action == "deutsch")
     {
-      ntp.fromLocalString(httpServer.arg("time")) ;
+      settings._lang = Lang::DE ;
+      settingsDirty = true ;
+    }
+    else if (action == "english")
+    {
+      settings._lang = Lang::EN ;
+      settingsDirty = true ;
+    }
+    else if (action == "wifi")
+    {
+      String ssid = httpServer.arg("ssid") ;
+      String psk  = httpServer.arg("psk" ) ;
+
+      if (ssid.length() && (ssid != settings._ssid))
+      {
+        settings._ssid = ssid ;
+        settings._psk  = psk ;
+        settingsDirty = true ;
+        WifiStationStart() ;
+      }
+      else if (psk.length() && (psk != settings._psk))
+      {
+        settings._psk = psk ;
+        settingsDirty = true ;
+        WifiStationStart() ;
+      }
     }
     else if (action == "color")
     {
@@ -205,35 +564,23 @@ void httpOnSettings()
         settingsDirty = true ;
       }
     }
-    else if (action == "wifi")
+    else if (action == "time")
     {
-      String ssid = httpServer.arg("ssid") ;
-      String psk  = httpServer.arg("psk" ) ;
+      ntp.fromLocalString(httpServer.arg("time")) ;
+    }
+    else if (action == "timezone")
+    {
       String ntp  = httpServer.arg("ntp" ) ;
-      String tzDstMonth  = httpServer.arg("tzDstMonth"      ) ;
-      String tzDstWeek   = httpServer.arg("tzDstWeekOfMonth") ;
-      String tzDstDay    = httpServer.arg("tzDstDayOfWeek"  ) ;
-      String tzDstHour   = httpServer.arg("tzDstHour"       ) ;
-      String tzDstOffset = httpServer.arg("tzDstOffset"     ) ;
-      String tzStdMonth  = httpServer.arg("tzStdMonth"      ) ;
-      String tzStdWeek   = httpServer.arg("tzStdWeekOfMonth") ;
-      String tzStdDay    = httpServer.arg("tzStdDayOfWeek"  ) ;
-      String tzStdHour   = httpServer.arg("tzStdHour"       ) ;
-      String tzStdOffset = httpServer.arg("tzStdOffset"     ) ;
-
-      if (ssid.length() && (ssid != settings._ssid))
-      {
-        settings._ssid = ssid ;
-        settings._psk  = psk ;
-        settingsDirty = true ;
-        WifiStationStart() ;
-      }
-      else if (psk.length() && (psk != settings._psk))
-      {
-        settings._psk = psk ;
-        settingsDirty = true ;
-        WifiStationStart() ;
-      }
+      String tzDstMonth  = httpServer.arg("tzDstMonth" ) ;
+      String tzDstWeek   = httpServer.arg("tzDstWeek"  ) ;
+      String tzDstDay    = httpServer.arg("tzDstDay"   ) ;
+      String tzDstHour   = httpServer.arg("tzDstHour"  ) ;
+      String tzDstOffset = httpServer.arg("tzDstOffset") ;
+      String tzStdMonth  = httpServer.arg("tzStdMonth" ) ;
+      String tzStdWeek   = httpServer.arg("tzStdWeek"  ) ;
+      String tzStdDay    = httpServer.arg("tzStdDay"   ) ;
+      String tzStdHour   = httpServer.arg("tzStdHour"  ) ;
+      String tzStdOffset = httpServer.arg("tzStdOffset") ;
 
       if (ntp != settings._ntp)
       {
@@ -279,7 +626,7 @@ void httpOnSettings()
         tz.addRule( { stdMonth, stdWeek, stdDay, stdHour, stdOffset } ) ;
 
         settingsDirty = true ;
-        ntpDirty = true ; // todo
+        ntpDirty = true ;
       }
 
     }
@@ -294,79 +641,12 @@ void httpOnSettings()
         ntp.stop() ;
     }
   }
-  
-  httpServer.send(200, "text/html",
-                  httpHeader("Uhr - Einstellungen") +
-                  String("<p style=\"font-size: small\"><a href=\"/\">Startseite</a></p>\n"
-                         "<div class=\"border\">\n"
-                         "<h2>Zeit</h2>\n"
-                         "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-                         "<input type=\"time\" name=\"time\" step=\"1\" value=\"") +
-                  ntp.toLocalString() +
-                  String("\"/>\n"
-                         "<button type=\"submit\" name=\"action\" value=\"time\">Zeit setzen</button>\n"
-                         "</form>\n"
-                         "</div>\n"                         
-                         
-                         "<div class=\"border\">\n"
-                         "<h2>Farbe</h2>\n"
-                         "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-                         "<table>\n"
-                         " <tr><td>Stunde</td><td><input type=\"color\" name=\"colorHour\" value=\"") +
-                  settings._colHour.toString() +
-                  String("\"/></td></tr>\n"
-                         " <tr><td>Minute</td><td><input type=\"color\" name=\"colorMinute\" value=\"") +
-                  settings._colMinute.toString() +
-                  String("\"/></td></tr>\n"
-                         " <tr><td>Sekunde</td><td><input type=\"color\" name=\"colorSecond\" value=\"") +
-                  settings._colSecond.toString() +
-                  String("\"/></td></tr>\n"
-                         "</table>\n"
-                         "<button type=\"submit\" name=\"action\" value=\"color\">Farbe setzen</button>\n"
-                         "</form>\n"
-                         "</div>\n"                         
 
-                         "<div class=\"border\">\n"
-                         "<h2>WLAN</h2>\n"
-                         "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-                         "<table>\n"
-                         "  <tr><td>SSID</td><td><input type=\"text\" name=\"ssid\" size=\"32\" value=\"") +
-                  settings._ssid +
-                  String("\"/></td></tr>\n"
-                         "  <tr><td>PSK</td><td><input type=\"password\" name=\"psk\" size=\"32\" value=\"\"/></td></tr>\n"
-                         "  <tr><td>NTP</td><td><input type=\"text\" name=\"ntp\" size=\"32\" value=\"") +
-                  settings._ntp +
-                  String("\" placeholder=\"pool.ntp.org\"/></td></tr>\n"
-                         "</table>\n"
-                         "<table>\n"
-                         "  <tr><th>Zeitzone</th><th>Monat</th><th>Woche</th><th>Wochentag</th><th>Stunde</th><th>Minuten zu UTC</th></tr>\n"
-                         "  <tr><th>Start Sommerzeit</th><td>") +
-                  inputMonth("tzDstMonth", settings._tzDstMonth) +
-                  String("</td><td>") +
-                  inputWeek("tzDstWeekOfMonth", settings._tzDstWeek) +
-                  String("</td><td>") +
-                  inputDay("tzDstDayOfWeek", settings._tzDstDay) +
-                  String("</td><td>") +
-                  inputInt("tzDstHour", settings._tzDstHour, (uint8_t)0, (uint8_t)23) +
-                  String("</td><td>") +
-                  inputInt("tzDstOffset", settings._tzDstOffset, (int16_t)-840, (int16_t)840) +
-                  String("</td></tr>"
-                         "  <th>Ende Sommerzeit</th><td>") +
-                  inputMonth("tzStdMonth", settings._tzStdMonth) +
-                  String("</td><td>") +
-                  inputWeek("tzStdWeekOfMonth", settings._tzStdWeek) +
-                  String("</td><td>") +
-                  inputDay("tzStdDayOfWeek", settings._tzStdDay) +
-                  String("</td><td>") +
-                  inputInt("tzStdHour", settings._tzStdHour, (uint8_t)0, (uint8_t)23) +
-                  String("</td><td>") +
-                  inputInt("tzStdOffset", settings._tzStdOffset, (int16_t)-840, (int16_t)840) +
-                  String("</td></tr>"
-                         "</table>\n"
-                         "<button type=\"submit\" name=\"action\" value=\"wifi\">Zugangsdaten setzen</button>\n"
-                         "</form>\n"
-                         "</div>\n") +
-                  httpFooter()) ;
+  httpOk() ;
+  httpTemplate_P(HttpHeader_P, translateSettings) ;
+  httpTemplate_P(HttpSettings_P, translateSettings) ;
+  httpTemplate_P(HttpFooter_P, translateSettings) ;
+  httpServer.sendContent("") ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

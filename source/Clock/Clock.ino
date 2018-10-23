@@ -6,8 +6,14 @@
 
 #include <Adafruit_NeoPixel.h>
 
+#include <functional>
+
 #include "timezone.h"
 #include "Clock.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
+char HostName[16] ;
 
 const int WS2812_NUM = 60 ;
 const int WS2812_PIN = 12 ;
@@ -176,6 +182,8 @@ void updateClock()
 
 void setup()
 {
+  sprintf(HostName, "clock-%06x", ESP.getChipId()) ;
+  
   Serial.begin ( 115200 );
   Serial.printf("\n") ;
   //Serial.setDebugOutput(true) ;
@@ -183,11 +191,11 @@ void setup()
   SPIFFS.begin() ;
   
   settings.load() ;
-  Serial.printf("AP: %s / %s / %d\n", settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
+  Serial.printf("AP: SSID=%s / PSK=%s / Channel=%d\n", settings._apSsid.c_str(), settings._apPsk.c_str(), settings._apChan) ;
   
   WifiSetup() ;
   HttpSetup() ;
-
+  
   udp.begin(UDP_PORT) ;
 
   ws2812.begin() ;
@@ -250,7 +258,7 @@ void loop()
       if (now > next)
       {
         updateClock() ;
-        next = now + 333 ;
+        next = now + 1000 ;
       }
     }
   }
@@ -260,6 +268,8 @@ void loop()
     ntp.tx(udp, settings._ntp) ;
   
   httpServer.handleClient() ;
+
+  delay(40) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

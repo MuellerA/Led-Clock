@@ -16,11 +16,8 @@ void Settings::load()
 {
   Serial.println("Settings::load") ;
 
-  char buff[16] ;
-  sprintf(buff, "%06x", ESP.getChipId()) ;
  _apSsid = "Clock" ;
- _apPsk  = "Clock" ;
- _apPsk += buff ;
+ _apPsk  = HostName ;
  _apChan = 8 ;
 
  String str ;
@@ -53,6 +50,8 @@ void Settings::load()
    ascInt2bin(fileRead(cfg), _tzStdHour  ) ;
    ascInt2bin(fileRead(cfg), _tzStdOffset) ;
 
+   ascInt2bin(fileRead(cfg), tmp) ; _lang = (Lang)tmp ;
+   
    // magic aendern!
 
    tz.resetRules() ;
@@ -98,6 +97,8 @@ void Settings::save() const
   cfg.println(         _tzStdHour  ) ;
   cfg.println(         _tzStdOffset) ;
 
+  cfg.println((uint8_t)_lang) ;
+  
   // magic aendern!
   
   cfg.close() ;

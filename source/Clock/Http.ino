@@ -6,6 +6,7 @@ void HttpSetup()
 {
   httpServer.on("/", httpOnHome) ;
   httpServer.on("/settings.html", httpOnSettings) ;
+  httpServer.on("/clock.css", httpOnCss) ;
   httpServer.on("/reboot", httpOnReboot) ;
   httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
   httpServer.begin() ;
@@ -266,16 +267,7 @@ const char HttpHeader_P[] PROGMEM =
   "  <meta charset=\"utf-8\"/>\n"
   "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
   "  <title>%Clock% - %Page%</title>\n"
-  " <style>\n"
-  ".border\n"
-  "{\n"
-  "  border-width: 1px;\n"
-  "  border-color: black;\n"
-  "  border-style: solid;\n"
-  "  padding: 5px;\n"
-  "  margin: 8px 0px;\n"
-  "}\n"
-  " </style>\n"
+  "  <link rel=\"stylesheet\" href=\"/clock.css\"/>\n"
   " </head>\n"
   " <body>\n"
   "  <h1>%Clock% - %Page%</h1>\n" ;
@@ -296,8 +288,32 @@ const char HttpHome_P[] PROGMEM =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char HttpCss_P[] PROGMEM =
+  ".border\n"
+  "{\n"
+  "  border-width: 1px;\n"
+  "  border-color: black;\n"
+  "  border-style: solid;\n"
+  "  padding: 5px;\n"
+  "  margin: 8px 0px;\n"
+  "}\n" ;
+  
+////////////////////////////////////////////////////////////////////////////////
+
 const char HttpReboot_P[] PROGMEM =
-  "<p>Starte neu...</p>\n" ;
+  "<!DOCTYPE html>\n"
+  "<html>\n"
+  " <head>\n"
+  "  <meta charset=\"utf-8\"/>\n"
+  "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
+  "  <meta http-equiv=\"refresh\" content=\"10;URL=/\"/>"
+  "  <title>%Clock% - %Page%</title>\n"
+  " </head>\n"
+  " <body>\n"
+  "  <h1>%Clock% - %Page%</h1>\n"
+  "  <p>%Reboot%...</p>\n"
+  " </body>\n"
+  "</html>\n" ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -368,6 +384,14 @@ void httpOk()
   httpServer.send(200);
 }
 
+void httpOkCss()
+{
+  httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  httpServer.sendHeader("Content-Type","text/css",true);
+  httpServer.sendHeader("Cache-Control","no-cache");
+  httpServer.send(200);
+}
+
 void httpOnHome()
 {
   httpOk() ;
@@ -377,12 +401,17 @@ void httpOnHome()
   httpServer.sendContent("") ;
 }
 
+void httpOnCss()
+{
+  httpOkCss() ;
+  httpServer.sendContent(HttpCss_P) ;
+  httpServer.sendContent("") ;
+}
+
 void httpOnReboot()
 {
   httpOk() ;
-  httpTemplate_P(HttpHeader_P, translateReboot) ;
   httpTemplate_P(HttpReboot_P, translateReboot) ;
-  httpTemplate_P(HttpFooter_P, translateReboot) ;
   httpServer.sendContent("") ;
 
   Shutdown = true ;

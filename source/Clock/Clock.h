@@ -86,7 +86,7 @@ struct Settings
   TZ::Month _tzStdMonth  { TZ::Month:: Oct } ;
   TZ::Week  _tzStdWeek   { TZ::Week:: Last } ;
   TZ::Day   _tzStdDay    { TZ::Day::   Sun } ;
-  uint8_t   _tzStdHour   {               2 } ;
+  uint8_t   _tzStdHour   {               3 } ;
   int16_t   _tzStdOffset {              60 } ;
 
   // Color  

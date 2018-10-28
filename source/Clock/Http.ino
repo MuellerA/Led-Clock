@@ -119,6 +119,7 @@ Translate translateWords[] =
     { "Time"            , "Zeit"                },
     { "Timezone"        , "Zeitzone"            },
     { "Daylight Saving Time", "Sommerzeit"      },
+    { "Standard Time"   , "Normalzeit"          },
     { "Start"           , "Start"               },
     { "End"             , "Ende"                },
     { "Month"           , "Monat"               },
@@ -328,17 +329,6 @@ const char HttpSettings_P[] PROGMEM =
   "</form>\n"
   "</div>\n"
   "\n"
-  "<div class=\"border\">\n" // WiFi
-  "<h2>%WiFi%</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<table>\n"
-  "  <tr><td>SSID</td><td><input type=\"text\" name=\"ssid\" size=\"32\" value=\"%@Ssid%\"/></td></tr>\n"
-  "  <tr><td>PSK</td><td><input type=\"password\" name=\"psk\" size=\"32\" value=\"\"/></td></tr>\n"
-  "</table>\n"
-  "<button type=\"submit\" name=\"action\" value=\"wifi\">%Save Settings%</button>\n"
-  "</form>\n"
-  "</div>\n"
-  "\n"
   "<div class=\"border\">\n" // Color
   "<h2>%Color%</h2>\n"
   "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
@@ -351,6 +341,17 @@ const char HttpSettings_P[] PROGMEM =
   "</form>\n"
   "</div>\n"
   "\n"
+  "<div class=\"border\">\n" // WiFi
+  "<h2>%WiFi%</h2>\n"
+  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
+  "<table>\n"
+  "  <tr><td>SSID</td><td><input type=\"text\" name=\"ssid\" size=\"32\" value=\"%@Ssid%\"/></td></tr>\n"
+  "  <tr><td>PSK</td><td><input type=\"password\" name=\"psk\" size=\"32\" value=\"\"/></td></tr>\n"
+  "</table>\n"
+  "<button type=\"submit\" name=\"action\" value=\"wifi\">%Save Settings%</button>\n"
+  "</form>\n"
+  "</div>\n"
+  "\n"
   "<div class=\"border\">\n" // Timezone
   "<h2>%Time% (NTP)</h2>\n"
   "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
@@ -360,7 +361,7 @@ const char HttpSettings_P[] PROGMEM =
   "<table>\n"
   "  <tr><th>%Timezone%</th><th>%Month%</th><th>%Week%</th><th>%Day%</th><th>%Hour%</th><th>%Offset to UTC (min)%</th></tr>\n"
   "  <tr><th>%Start% %Daylight Saving Time%</th><td>%@DstMonth%</td><td>%@DstWeek%</td><td>%@DstDay%</td><td>%@DstHour%</td><td>%@DstOffset%</td></tr>\n"
-  "  <tr><th>%End% %Daylight Saving Time%</th><td>%@StdMonth%</td><td>%@StdWeek%</td><td>%@StdDay%</td><td>%@StdHour%</td><td>%@StdOffset%</td></tr>\n"
+  "  <tr><th>%Start% %Standard Time%</th><td>%@StdMonth%</td><td>%@StdWeek%</td><td>%@StdDay%</td><td>%@StdHour%</td><td>%@StdOffset%</td></tr>\n"
   "</table>\n"
   "<button type=\"submit\" name=\"action\" value=\"timezone\">%Save NTP%</button>\n"
   "</form>\n"
@@ -404,7 +405,7 @@ void httpOnHome()
 void httpOnCss()
 {
   httpOkCss() ;
-  httpServer.sendContent(HttpCss_P) ;
+  httpServer.sendContent_P(HttpCss_P) ;
   httpServer.sendContent("") ;
 }
 

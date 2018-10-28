@@ -27,8 +27,6 @@ namespace TZ
     bool operator<=(uint64_t utc) const ;
     int16_t secOffset() const ;
     
-    void setSecHourOffset(int16_t sec) ; // utc to local for start hour
-    
   private:
     uint32_t startSecInYear(uint64_t utc) const ;
 
@@ -36,8 +34,8 @@ namespace TZ
     Day     _day ;
     Month   _month ;
     uint8_t _hour ;
-    int16_t _secHourOffset ;
-    int16_t _secOffset ;
+    int16_t _secHourOffset ; // start hour offset to utc in seconds
+    int16_t _secOffset ;     // time zone offset to utc in seconds
 
     mutable uint32_t _startSecInYear28 ; // cached value
     mutable uint8_t  _year28 ;           // year in 28 year cycle
@@ -59,9 +57,6 @@ namespace TZ
     void resetRules() ;
     void addRule(const Rule &rule) ;
 
-  private:
-    void setSecHourOffset() ;
-    
   private:
     uint8_t _nRules ;
     Rule    _rules[4] ;

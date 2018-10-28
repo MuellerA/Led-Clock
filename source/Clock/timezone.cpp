@@ -143,7 +143,7 @@ namespace TZ
   }
   
   Rule::Rule(Month month, Week week, Day day, uint8_t hour, int16_t minOffset) :
-    _month(month), _week(week), _day(day), _hour(hour), _secHourOffset(_hour*60*60), _secOffset(60*minOffset),
+    _month(month), _week(week), _day(day), _hour(hour), _secHourOffset(_hour*60*60 - minOffset*60), _secOffset(60*minOffset),
     _startSecInYear28(~0U), _year28(~0)
   {
   }
@@ -151,6 +151,7 @@ namespace TZ
   bool Rule::operator<=(uint64_t sec) const
   {
     uint32_t s28 = utcToT2001(sec) % SecPer28Year ;
+
     return startSecInYear(s28) <= s28 ;
   }
 
@@ -159,11 +160,6 @@ namespace TZ
     return _secOffset ;
   }
 
-  void Rule::setSecHourOffset(int16_t sec)
-  {
-    _secHourOffset = _hour * 60 * 60 + sec ;
-  }
-  
   uint32_t Rule::startSecInYear(uint64_t s28) const
   {
     uint32_t y4  = s28 / SecPer4Year ;  // cycle[0..6]  in  28 year cycle
@@ -195,6 +191,7 @@ namespace TZ
           _secHourOffset ;
       }
     }
+
     return _startSecInYear28 ;
   }
 
@@ -202,23 +199,18 @@ namespace TZ
 
   TimeZone::TimeZone() : _nRules(0), _rules {}
   {
-    setSecHourOffset() ;
   }
   TimeZone::TimeZone(const Rule &r1) : _nRules(1), _rules{ r1 }
   {
-    setSecHourOffset() ;
   }                           
   TimeZone::TimeZone(const Rule &r1, const Rule &r2) : _nRules(2), _rules{ r1, r2 }
   {
-    setSecHourOffset() ;
   }
   TimeZone::TimeZone(const Rule &r1, const Rule &r2, const Rule &r3) : _nRules(3), _rules{ r1, r2, r3 }
   {
-    setSecHourOffset() ;
   }
   TimeZone::TimeZone(const Rule &r1, const Rule &r2, const Rule &r3, const Rule &r4) : _nRules(4), _rules{ r1, r2, r3, r4 }
   {
-    setSecHourOffset() ;
   }
 
   uint64_t TimeZone::utcToLoc(uint64_t utc)
@@ -262,17 +254,8 @@ namespace TZ
     {
       _rules[_nRules++] = rule ;
     }
-    setSecHourOffset() ;
   }
 
-  void TimeZone::setSecHourOffset()
-  {
-    for (uint8_t iRule = _nRules ; iRule != 0 ; --iRule)
-    {
-      _rules[iRule%_nRules].setSecHourOffset(_rules[iRule-1].secOffset()) ;
-    }
-  }
-  
 }
 
 ////////////////////////////////////////////////////////////////////////////////

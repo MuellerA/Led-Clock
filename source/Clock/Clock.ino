@@ -1,5 +1,19 @@
+////////////////////////////////////////////////////////////////////////////////
+// Clock.ino
+////////////////////////////////////////////////////////////////////////////////
+
+// HTTPS axTLS or BearSSL or none (= unsecured http)
+#define HTTPS_None    0
+#define HTTPS_axTLS   1
+#define HTTPS_BearSSL 2
+#define HTTPS HTTPS_axTLS
+
 #include <ESP8266WiFi.h>
+#if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
+#include <ESP8266WebServerSecure.h>
+#else
 #include <ESP8266WebServer.h>
+#endif
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>
 #include <FS.h>
@@ -20,7 +34,13 @@ const int WS2812_PIN = 12 ;
 
 Adafruit_NeoPixel ws2812 = Adafruit_NeoPixel(WS2812_NUM, WS2812_PIN, NEO_GRB + NEO_KHZ800);
 
+#if HTTPS == HTTPS_axTLS
+axTLS::ESP8266WebServerSecure httpServer ( 443 ) ;
+#elif HTTPS == HTTPS_BearSSL
+BearSSL::ESP8266WebServerSecure httpServer ( 443 ) ;
+#else
 ESP8266WebServer httpServer ( 80 ) ;
+#endif
 ESP8266HTTPUpdateServer httpUpdater;
 
 const uint16_t UDP_PORT = 1123 ;

@@ -32,7 +32,7 @@
   <li>Open the Serial Monitor in Arduino IDE</li>
   <li>Power on / reset the Clock</li>
   <li>Connect to Network with SSID = "Clock" and PSK as shown in the Serial Monitor (e.g. "clock-123456")</li>
-  <li>Open the web page "http://192.168.4.1"</li>
+  <li>Open the web page "https://192.168.4.1"</li>
   <li>On the Settings page enter your WiFi credentials (SSID and PSK) and press "save"</li>
   <li>The clock will now connect to the network, fetch the current time and display it</li>
   <li>At next power on the clock will remember the settings</li>

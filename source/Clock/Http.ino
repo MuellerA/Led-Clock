@@ -2,13 +2,71 @@
 // Http
 ////////////////////////////////////////////////////////////////////////////////
 
+#if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
+
+static const uint8_t GenericCert[] PROGMEM =
+{
+#include "https-cert.h"
+};
+static char*    CustomCertFileName = "/cert.der" ;
+static int      CustomCertLen      = 0 ;
+static uint8_t* CustomCert         = nullptr ;
+
+static const uint8_t GenericKey[]  PROGMEM =
+{
+#include "https-key.h"
+} ;
+
+static char*    CustomKeyFileName  = "/key.der"  ;
+static int      CustomKeyLen       = 0 ;
+static uint8_t* CustomKey          = nullptr ;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
 void HttpSetup()
 {
+#if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
+  bool customCert = false ;
+
+  if (SPIFFS.exists(CustomCertFileName) && SPIFFS.exists(CustomKeyFileName))
+  {
+    File certFile = SPIFFS.open(CustomCertFileName, "r") ;
+    File keyFile  = SPIFFS.open(CustomKeyFileName , "r") ;
+    if (certFile && keyFile)
+    {
+      CustomCertLen = certFile.size() ;
+      CustomCert = (uint8_t*) malloc(CustomCertLen) ;
+      certFile.read(CustomCert, CustomCertLen) ;
+      certFile.close() ;
+
+      CustomKeyLen = keyFile.size() ;
+      CustomKey = (uint8_t*) malloc(CustomKeyLen) ;
+      keyFile.read(CustomKey, CustomKeyLen) ;
+      keyFile.close() ;
+
+      httpServer.setServerKeyAndCert(CustomKey, CustomKeyLen, CustomCert, CustomCertLen) ;
+      customCert = true ;
+    }
+
+    if (!customCert)
+      Serial.println("cannot read custom https credentials") ;
+  }
+
+  if (!customCert) // no SPIFS cert or empty files
+  {
+    Serial.println("using generic https credentials") ;
+    httpServer.setServerKeyAndCert_P(GenericKey, sizeof(GenericKey), GenericCert, sizeof(GenericCert)) ;
+  }
+#endif
+  
   httpServer.on("/", httpOnHome) ;
   httpServer.on("/settings.html", httpOnSettings) ;
   httpServer.on("/clock.css", httpOnCss) ;
   httpServer.on("/reboot", httpOnReboot) ;
+  
   httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
+  
   httpServer.begin() ;
 }
 

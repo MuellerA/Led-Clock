@@ -309,7 +309,6 @@ void loop()
     if (now - last > 333)
     {
       brightness.update() ;
-      Serial.println(brightness()) ;
       last = now ;                                                                               
     }
   }

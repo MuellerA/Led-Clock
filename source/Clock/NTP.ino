@@ -110,7 +110,7 @@ bool Ntp::rx(WiFiUDP &udp)
   _current = utc ;
   _isUtc = true ;
   _valid = true ;
-  _nextInc = now ; // todo: take transmitTsFrac into account
+  _lastInc = now ; // todo: take transmitTsFrac into account
   
   return true ;
 }
@@ -122,28 +122,28 @@ bool Ntp::inc()
   if (!_valid)
     return false ;
 
-    uint32_t ms = millis() ;
-    if (ms < _nextInc)
+    uint32_t now = millis() ;
+    if (now - _lastInc < 1000)
       return false ;
 
     if (_isUtc)
     {
-      while (ms >= _nextInc)
+      while (now - _lastInc >= 1000)
       {  
         uint64_t secondsOfDay = _current % (24 * 60 * 60) ;
         if      ((secondsOfDay == (24 * 60 * 60 - 2)) && _next59) { _current += 2 ; _next59 = false ; }
         else if ((secondsOfDay == (24 * 60 * 60 + 0)) && _next61) { _current += 0 ; _next61 = false ; }
         else                                                      { _current += 1 ;                   }
-        _nextInc += 1000 ;
+        _lastInc += 1000 ;
       }
       return true ;
     }
     else
     {
-      while (ms >= _nextInc)
+      while (now - _lastInc >= 1000)
       {
         _current += 1 ;
-        _nextInc += 1000 ;
+        _lastInc += 1000 ;
       }
       return true ;
     }
@@ -160,7 +160,7 @@ void Ntp::setLocal(uint64_t local)
   _current    = local ;
   _isUtc      = false ;
   _valid      = true ;
-  _nextInc    = now ;
+  _lastInc    = now ;
 }
 
 void Ntp::printSerial(const Ntp::NtpData &data) const

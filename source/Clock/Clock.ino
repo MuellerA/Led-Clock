@@ -120,6 +120,8 @@ bool ascInt2bin(String str, T &val, T min, T max)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const double Brightness::Min = 0.1 ;
+
 Brightness::Brightness(unsigned int pin) : _pin(pin)
 {
 }
@@ -134,38 +136,55 @@ void Brightness::init()
   _idx = 0 ;
 }
 
-unsigned long Brightness::update()
+void Brightness::update()
 {
   unsigned long v = analogRead(_pin) ;
   _sum -= _val[_idx] ;
   _val[_idx] = v ;
   _sum += _val[_idx] ;
   _idx = (_idx+1) % 16 ;
-  
-  return _sum/16 ;
+}
+
+double Brightness::operator()() const
+{
+  double v = (double)(_sum) / (16.0*1024.0) ;
+  return (v < Min) ? Min : v ;    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void updateClock(uint64_t localTime)
 {
+  static Color c15(0x18, 0x18, 0x18) ;
+  static Color c05(0x08, 0x08, 0x08) ;
+  static Color c01(0x00, 0x00, 0x00) ;
+  
   uint8_t second = localTime % 60 ;
   uint8_t minute = localTime / 60 % 60 ;
   uint8_t hour   = localTime / 60 / 60 % 12 ;
-    
+
+  double b = brightness() ;
+
+  Color c15b = c15.brightness(b) ;
+  Color c05b = c05.brightness(b) ;
+  Color c01b = c01.brightness(b) ;
+  Color hb   = settings._colHour  .brightness(b) ;
+  Color mb   = settings._colMinute.brightness(b) ;
+  Color sb   = settings._colSecond.brightness(b) ;
+  
   for (unsigned char i = 0 ; i < 60 ; ++i)
   {
     Color c ;
 
-    if (i == (hour*5 + minute/12)) c = settings._colHour ;
-    if (i == minute)               c.mix(settings._colMinute) ;
-    if (i == second)               c.mix(settings._colSecond) ;
+    if (i == (hour*5 + minute/12)) c = hb ;
+    if (i == minute)               c.mix(mb) ;
+    if (i == second)               c.mix(sb) ;
 
     if (!c)
     {
-      if      ((i % 15) == 0) c.set(0x18, 0x18, 0x18) ;
-      else if ((i %  5) == 0) c.set(0x08, 0x08, 0x08) ;
-      else                    c.set(0x00, 0x00, 0x00) ;
+      if      ((i % 15) == 0) c = c15b ;
+      else if ((i %  5) == 0) c = c05b ;
+      else                    c = c01b ;
     }
 
     ws2812.setPixelColor(i, c.rgb()) ;
@@ -219,19 +238,22 @@ void setup()
   udp.begin(UDP_PORT) ;
 
   ws2812.begin() ;
+
+  brightness.init() ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void loop()
 {
+  uint32_t now = millis() ;
+  
   if (Shutdown)
   {
     static uint8_t  cnt  = 0 ;
-    static uint32_t next = 0 ;
+    static uint32_t last = 0 ;
 
-    uint32_t now = millis() ;
-    if (now > next)
+    if (now - last > 25)
     {
       for (uint8_t i = 0 ; i < 60 ; ++i)
       {
@@ -242,7 +264,7 @@ void loop()
       }
       ws2812.show() ;
       cnt = cnt + 1 ;
-      next = now + 20 ;
+      last = now ;
 
       if (cnt > 30)
         ESP.restart() ;
@@ -273,23 +295,32 @@ void loop()
     }
     else
     {
-      static uint32_t next = 0 ;
-      uint32_t now = millis() ;
-      if (now > next)
+      static uint32_t last = 0 ;
+      if (now - last > 1000)
       {
         updateClock() ;
-        next = now + 1000 ;
+        last = now ;
       }
     }
   }
 
+  {
+    static uint32_t last = 0 ;
+    if (now - last > 333)
+    {
+      brightness.update() ;
+      Serial.println(brightness()) ;
+      last = now ;                                                                               
+    }
+  }
+  
   // NTP
   if (WifiConnected)
     ntp.tx(udp, settings._ntp) ;
   
   httpServer.handleClient() ;
 
-  delay(40) ;
+  delay(50) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

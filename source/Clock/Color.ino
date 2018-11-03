@@ -31,6 +31,22 @@ void Color::mix(const Color &c)
   sum = (uint16_t)_b + (uint16_t)c._b ; _b = (sum > 0xff) ? 0xff : sum ;
 }
 
+bool Color::operator!() const
+{
+  return !_r && !_g && !_b ;
+}
+
+Color Color::brightness(double b) const
+{
+  Color c ;
+
+  c._r = (uint8_t)round((double)_r * b) ;
+  c._g = (uint8_t)round((double)_g * b) ;
+  c._b = (uint8_t)round((double)_b * b) ;
+
+  return c ;
+}
+
 String Color::toString() const
 {
   char buff[16] ;
@@ -63,11 +79,6 @@ bool Color::fromString(const String &str)
     return true ;
   }
   return false ;
-}
-
-bool Color::operator!() const
-{
-  return !_r && !_g && !_b ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

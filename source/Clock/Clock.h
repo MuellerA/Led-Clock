@@ -12,10 +12,12 @@ class HttpBuff ;
 
 struct Brightness
 {
+  const static double Min ;
   Brightness(unsigned int pin) ;
   
   void init() ;
-  unsigned long update() ;
+  void update() ;
+  double operator()() const ; // value between Min and 1.0
 
   unsigned long _pin ;
   unsigned long _val[16] ;
@@ -35,6 +37,7 @@ public:
   uint32_t rgb() const ;
   void mix(const Color &c) ;
   bool operator!() const ;
+  Color brightness(double b) const ;
   String toString() const ;
   bool fromString(const String &str) ;
 
@@ -162,7 +165,7 @@ private:
   bool     _valid   = false ;
   bool     _next59  = false ;
   bool     _next61  = false ;
-  uint32_t _nextInc     = 0 ; // next millis when inc current time
+  uint32_t _lastInc     = 0 ; // last millis when inc'ed current time
   uint32_t _lastRequest = 0 ; // millis of last request
   uint64_t _tsReceived  = 0 ; // last received ntp time
   uint64_t _tsTransmit  = 0 ; // last tx timestamp

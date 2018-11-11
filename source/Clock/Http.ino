@@ -158,14 +158,19 @@ Translate transLast      { "Last"     , "Letzter"   } ;
 
 Translate translateWords[] =
   {
+    { "Switch On/Off"   , "Ein-/Ausschalten"        },
+    { "Off"             , "Aus"                     },
+    { "On"              , "Ein"                     },
+    { "Automatic"       , "Automatisch"             },
     { "Clock"           , "Uhr"                     },
     { "Home"            , "Startseite"              },
     { "Settings"        , "Einstellungen"           },
     { "Update"          , "Aktualisieren"           },
     { "Reboot"          , "Neustart"                },
     { "manual"          , "manuell"                 },
-    { "Save Settings"   , "Einstellungen speichern" },
+    { "Save On/Off"     , "Automatik speichern"     },
     { "Save Color"      , "Farbe speichern"         },
+    { "Save WiFi"       , "WLAN speichern"          },
     { "Save Time"       , "Zeit speichern"          },
     { "Save NTP"        , "NTP speichern"           },
     
@@ -236,15 +241,12 @@ String translate(const String &orig)
   else if (orig == "@StdDay"      ) return inputDay  ("tzStdDay"   , settings._tzStdDay   ) ;
   else if (orig == "@StdHour"     ) return inputInt  ("tzStdHour"  , settings._tzStdHour  , (uint8_t)   0, (uint8_t) 23) ;
   else if (orig == "@StdOffset"   ) return inputInt  ("tzStdOffset", settings._tzStdOffset, (int16_t)-840, (int16_t)840) ;
-
+  else if (orig == "@AutoOnOffEa" ) return settings._autoOnOffEnable ? "checked" : "" ;
+  else if (orig == "@AutoOnOffOn" ) return timeToString(settings._autoOnOffOn) ;
+  else if (orig == "@AutoOnOffOff") return timeToString(settings._autoOnOffOff) ;
+  
   return orig ;
 }
-
-String translateHome    (const String &orig) { return (orig == "Page") ? translate("Home"    ) : translate(orig) ; }
-String translateReboot  (const String &orig) { return (orig == "Page") ? translate("Reboot"  ) : translate(orig) ; }
-String translateSettings(const String &orig) { return (orig == "Page") ? translate("Settings") : translate(orig) ; }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -320,118 +322,141 @@ void httpTemplate_P(PGM_P temp, std::function<String(const String&)> translate)
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpHeader_P[] PROGMEM =
-  "<!DOCTYPE html>\n"
-  "<html>\n"
-  " <head>\n"
-  "  <meta charset=\"utf-8\"/>\n"
-  "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
-  "  <title>%Clock% - %Page%</title>\n"
-  "  <link rel=\"stylesheet\" href=\"/clock.css\"/>\n"
-  " </head>\n"
-  " <body>\n"
-  "  <h1>%Clock% - %Page%</h1>\n" ;
+  R"(<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>%Clock% - %Page%</title>
+  <link rel="stylesheet" href="/clock.css"/>
+ </head>
+ <body>
+  <h1>%Clock% - %Page%</h1>)" ;
 
 const char HttpFooter_P[] PROGMEM =
-  " </body>\n"
-  "</html>\n" ;
+  R"( </body>
+</html>)" ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpHome_P[] PROGMEM =
-  "<p style=\"font-size: small\">"
-  "<a href=\"/settings.html\">%Settings%</a> <a href=\"/update\">%Update%</a> <a href=\"/reboot\">%Reboot%</a>"
-  "</p>\n"
-  "<div>\n"
-  "<span class=\"border\" style=\"font-size: 500%%\">%@NtpTime%</span> %@NtpManual%"
-  "</div>\n" ;
+  R"(<p style="font-size: small">
+<a href="/settings.html">%Settings%</a> <a href="/update">%Update%</a> <a href="/reboot">%Reboot%</a>
+</p>
+<div>
+<span class="border" style="font-size: 500%%">%@NtpTime%</span> %@NtpManual%
+</div>)" ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpCss_P[] PROGMEM =
-  ".border\n"
-  "{\n"
-  "  border-width: 1px;\n"
-  "  border-color: black;\n"
-  "  border-style: solid;\n"
-  "  padding: 5px;\n"
-  "  margin: 8px 0px;\n"
-  "}\n" ;
+  R"(.border
+{
+  border-width: 1px;
+  border-color: black;
+  border-style: solid;
+  padding: 5px;
+  margin: 8px 0px;
+})" ;
   
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpReboot_P[] PROGMEM =
-  "<!DOCTYPE html>\n"
-  "<html>\n"
-  " <head>\n"
-  "  <meta charset=\"utf-8\"/>\n"
-  "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n"
-  "  <meta http-equiv=\"refresh\" content=\"10;URL=/\"/>"
-  "  <title>%Clock% - %Page%</title>\n"
-  " </head>\n"
-  " <body>\n"
-  "  <h1>%Clock% - %Page%</h1>\n"
-  "  <p>%Reboot%...</p>\n"
-  " </body>\n"
-  "</html>\n" ;
+  R"(<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="refresh" content="10;URL=/"/>
+  <title>%Clock% - %Page%</title>
+ </head>
+ <body>
+  <h1>%Clock% - %Page%</h1>
+  <p>%Reboot%...</p>
+ </body>
+</html>)" ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpSettings_P[] PROGMEM =
-  "<p style=\"font-size: small\"><a href=\"/\">%Home%</a></p>\n"
-  "\n"
-  "<div class=\"border\">\n" // Language
-  "<h2>Sprache / Language</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<button type=\"submit\" name=\"action\" value=\"deutsch\">Deutsch</button>\n"
-  "<button type=\"submit\" name=\"action\" value=\"english\">English</button>\n"
-  "</form>\n"
-  "</div>\n"
-  "\n"
-  "<div class=\"border\">\n" // Color
-  "<h2>%Color%</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<table>\n"
-  " <tr><td>%Hour%</td><td><input type=\"color\" name=\"colorHour\" value=\"%@ColHour%\"/></td></tr>\n"
-  " <tr><td>%Minute%</td><td><input type=\"color\" name=\"colorMinute\" value=\"%@ColMinute%\"/></td></tr>\n"
-  " <tr><td>%Second%</td><td><input type=\"color\" name=\"colorSecond\" value=\"%@ColSecond%\"/></td></tr>\n"
-  "</table>\n"
-  "<button type=\"submit\" name=\"action\" value=\"color\">%Save Color%</button>\n"
-  "</form>\n"
-  "</div>\n"
-  "\n"
-  "<div class=\"border\">\n" // WiFi
-  "<h2>%WiFi%</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<table>\n"
-  "  <tr><td>SSID</td><td><input type=\"text\" name=\"ssid\" size=\"32\" value=\"%@Ssid%\"/></td></tr>\n"
-  "  <tr><td>PSK</td><td><input type=\"password\" name=\"psk\" size=\"32\" value=\"\"/></td></tr>\n"
-  "</table>\n"
-  "<button type=\"submit\" name=\"action\" value=\"wifi\">%Save Settings%</button>\n"
-  "</form>\n"
-  "</div>\n"
-  "\n"
-  "<div class=\"border\">\n" // Timezone
-  "<h2>%Time% (NTP)</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<table>\n"
-  "  <tr><td>NTP</td><td><input type=\"text\" name=\"ntp\" size=\"32\" value=\"%@Ntp%\" placeholder=\"pool.ntp.org\"/></td></tr>\n"
-  "</table>\n"
-  "<table>\n"
-  "  <tr><th>%Timezone%</th><th>%Month%</th><th>%Week%</th><th>%Day%</th><th>%Hour%</th><th>%Offset to UTC (min)%</th></tr>\n"
-  "  <tr><th>%Start% %Daylight Saving Time%</th><td>%@DstMonth%</td><td>%@DstWeek%</td><td>%@DstDay%</td><td>%@DstHour%</td><td>%@DstOffset%</td></tr>\n"
-  "  <tr><th>%Start% %Standard Time%</th><td>%@StdMonth%</td><td>%@StdWeek%</td><td>%@StdDay%</td><td>%@StdHour%</td><td>%@StdOffset%</td></tr>\n"
-  "</table>\n"
-  "<button type=\"submit\" name=\"action\" value=\"timezone\">%Save NTP%</button>\n"
-  "</form>\n"
-  "</div>\n"
-  "\n"
-  "<div class=\"border\">\n" // Time
-  "<h2>%Time% (%manual%)</h2>\n"
-  "<form action=\"settings.html\" method=\"post\" autocomplete=\"off\">\n"
-  "<input type=\"time\" name=\"time\" step=\"1\" value=\"%@NtpTime%\"/>\n"
-  "<button type=\"submit\" name=\"action\" value=\"time\">%Save Time%</button>\n"
-  "</form>\n"
-  "</div>\n" ;
+  R"(<p style="font-size: small"><a href="/">%Home%</a></p>
+
+<!-- Language -->
+<div class="border">
+  <h2>Sprache / Language</h2>
+  <form action="settings.html" method="post" autocomplete="off">
+    <button type="submit" name="action" value="deutsch">Deutsch</button>
+    <button type="submit" name="action" value="english">English</button>
+  </form>
+</div>
+
+<!-- Switch On/Off -->
+<div class="border">
+  <h2>%Switch On/Off%</h2>
+  <form action="settings.html" method="post">
+    <button type="submit" name="action" value="on">%On%</button>
+    <button type="submit" name="action" value="off">%Off%</button>
+  </form>
+  <hr/>
+  <form action="settings.html" method="post">
+    <table>
+      <tr><td>%Automatic%</td><td><input type="checkbox" name="autoOnOffEa" value="enable" %@AutoOnOffEa%></td></tr>
+      <tr><td>%On%</td><td><input type="time" step="1" name="autoOnOffOn" value="%@AutoOnOffOn%"></td></tr>
+      <tr><td>%Off%</td><td><input type="time" step="1" name="autoOnOffOff" value="%@AutoOnOffOff%"></td></tr>
+    </table>
+    <button type="submit" name="action" value="auto">%Save On/Off%</button>
+  </form>
+</div>
+
+<!-- Color -->
+<div class="border">
+  <h2>%Color%</h2>
+  <form action="settings.html" method="post" autocomplete="off">
+    <table>
+      <tr><td>%Hour%</td><td><input type="color" name="colorHour" value="%@ColHour%"/></td></tr>
+      <tr><td>%Minute%</td><td><input type="color" name="colorMinute" value="%@ColMinute%"/></td></tr>
+      <tr><td>%Second%</td><td><input type="color" name="colorSecond" value="%@ColSecond%"/></td></tr>
+    </table>
+    <button type="submit" name="action" value="color">%Save Color%</button>
+  </form>
+</div>
+
+<!-- WiFi -->
+<div class="border">
+  <h2>%WiFi%</h2>
+  <form action="settings.html" method="post" autocomplete="off">
+    <table>
+      <tr><td>SSID</td><td><input type="text" name="ssid" size="32" value="%@Ssid%"/></td></tr>
+      <tr><td>PSK</td><td><input type="password" name="psk" size="32" value=""/></td></tr>
+    </table>
+    <button type="submit" name="action" value="wifi">%Save WiFi%</button>
+  </form>
+</div>
+
+<!-- Time NTP -->
+<div class="border">
+  <h2>%Time% (NTP)</h2>
+  <form action="settings.html" method="post" autocomplete="off">
+    <table>
+      <tr><td>NTP</td><td><input type="text" name="ntp" size="32" value="%@Ntp%" placeholder="pool.ntp.org"/></td></tr>
+    </table>
+    <table>
+      <tr><th>%Timezone%</th><th>%Month%</th><th>%Week%</th><th>%Day%</th><th>%Hour%</th><th>%Offset to UTC (min)%</th></tr>
+      <tr><th>%Start% %Daylight Saving Time%</th><td>%@DstMonth%</td><td>%@DstWeek%</td><td>%@DstDay%</td><td>%@DstHour%</td><td>%@DstOffset%</td></tr>
+      <tr><th>%Start% %Standard Time%</th><td>%@StdMonth%</td><td>%@StdWeek%</td><td>%@StdDay%</td><td>%@StdHour%</td><td>%@StdOffset%</td></tr>
+    </table>
+    <button type="submit" name="action" value="timezone">%Save NTP%</button>
+  </form>
+</div>
+
+<!-- Time Manual -->
+<div class="border">
+  <h2>%Time% (%manual%)</h2>
+  <form action="settings.html" method="post" autocomplete="off">
+    <input type="time" name="time" step="1" value="%@NtpTime%"/>
+    <button type="submit" name="action" value="time">%Save Time%</button>
+  </form>
+</div>)" ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -453,6 +478,9 @@ void httpOkCss()
 
 void httpOnHome()
 {
+  std::function<String(const String&)> translateHome = [](const String& orig)
+  { return (orig == "Page") ? translate("Home") : translate(orig) ; } ;
+  
   httpOk() ;
   httpTemplate_P(HttpHeader_P, translateHome) ;
   httpTemplate_P(HttpHome_P  , translateHome) ;
@@ -469,6 +497,9 @@ void httpOnCss()
 
 void httpOnReboot()
 {
+  std::function<String(const String&)> translateReboot = [](const String& orig)
+    { return (orig == "Page") ? translate("Reboot") : translate(orig) ; } ;
+
   httpOk() ;
   httpTemplate_P(HttpReboot_P, translateReboot) ;
   httpServer.sendContent("") ;
@@ -584,6 +615,7 @@ String inputDay(const char *name, TZ::Day day)
     inputOption(transSaturday() , day, TZ::Day::Sat) +
     String("</select>") ;
 }
+
 template<typename T>
 String inputInt(const char *name, T val, T min, T max)
 {
@@ -618,6 +650,37 @@ void httpOnSettings()
     {
       settings._lang = Lang::EN ;
       settingsDirty = true ;
+    }
+    else if (action == "on")
+    {
+      settings._state = State::On ;
+    }
+    else if (action == "off")
+    {
+      settings._state = State::Off ;
+    }
+    else if (action == "auto")
+    {
+      String sEa  = httpServer.arg("autoOnOffEa" ) ;
+      String sOn  = httpServer.arg("autoOnOffOn" ) ;
+      String sOff = httpServer.arg("autoOnOffOff") ;
+      
+      if (sOn.length() && sOff.length())
+      {
+        bool     ea  = sEa == "enable" ;
+        uint32_t on  = stringToTime(sOn) ;
+        uint32_t off = stringToTime(sOff) ;
+
+        if ((ea  != settings._autoOnOffEnable) ||
+            (on  != settings._autoOnOffOn    ) ||
+            (off != settings._autoOnOffOff   ))
+        {
+          settings._autoOnOffEnable = ea  ;
+          settings._autoOnOffOn     = on  ;
+          settings._autoOnOffOff    = off ;
+          settingsDirty = true ;
+        }
+      }
     }
     else if (action == "wifi")
     {
@@ -729,6 +792,9 @@ void httpOnSettings()
         ntp.stop() ;
     }
   }
+
+  std::function<String(const String&)> translateSettings = [](const String& orig)
+    { return (orig == "Page") ? translate("Settings") : translate(orig) ; } ;
 
   httpOk() ;
   httpTemplate_P(HttpHeader_P, translateSettings) ;

@@ -118,6 +118,20 @@ bool ascInt2bin(String str, T &val, T min, T max)
   return false ;
 }
 
+String timeToString(uint32_t t)
+{
+  char buff[16] ;
+  sprintf(buff, "%02ld:%02ld:%02ld", (long)(t / 60 / 60 % 24), (long)(t / 60 % 60), (long)(t % 60)) ;
+  return String(buff) ;
+}
+
+uint32_t stringToTime(const String &str)
+{
+  long h,m,s ;
+  sscanf(str.c_str(), "%02ld:%02ld:%02ld", &h, &m, &s) ;
+  return uint32_t(h*60*60 + m*60 + s) ;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 const double Brightness::Min = 0.1 ;
@@ -155,39 +169,59 @@ double Brightness::operator()() const
 
 void updateClock(uint64_t localTime)
 {
-  static Color c15(0x18, 0x18, 0x18) ;
-  static Color c05(0x08, 0x08, 0x08) ;
-  static Color c01(0x00, 0x00, 0x00) ;
-  
-  uint8_t second = localTime % 60 ;
-  uint8_t minute = localTime / 60 % 60 ;
-  uint8_t hour   = localTime / 60 / 60 % 12 ;
-
-  double b = brightness() ;
-
-  Color c15b = c15.brightness(b) ;
-  Color c05b = c05.brightness(b) ;
-  Color c01b = c01.brightness(b) ;
-  Color hb   = settings._colHour  .brightness(b) ;
-  Color mb   = settings._colMinute.brightness(b) ;
-  Color sb   = settings._colSecond.brightness(b) ;
-  
-  for (unsigned char i = 0 ; i < 60 ; ++i)
+  if (settings._autoOnOffEnable)
   {
-    Color c ;
-
-    if (i == (hour*5 + minute/12)) c = hb ;
-    if (i == minute)               c.mix(mb) ;
-    if (i == second)               c.mix(sb) ;
-
-    if (!c)
+    uint32_t lt = localTime % (24*60*60) ;
+    if (lt == settings._autoOnOffOff) settings._state = State::Off ;
+    if (lt == settings._autoOnOffOn ) settings._state = State::On  ;
+  }
+  
+  switch (settings._state)
+  {
+  case State::On:
+  default:
     {
-      if      ((i % 15) == 0) c = c15b ;
-      else if ((i %  5) == 0) c = c05b ;
-      else                    c = c01b ;
-    }
+      static Color c15(0x18, 0x18, 0x18) ;
+      static Color c05(0x08, 0x08, 0x08) ;
+      static Color c01(0x00, 0x00, 0x00) ;
+  
+      uint8_t second = localTime % 60 ;
+      uint8_t minute = localTime / 60 % 60 ;
+      uint8_t hour   = localTime / 60 / 60 % 12 ;
 
-    ws2812.setPixelColor(i, c.rgb()) ;
+      double b = brightness() ;
+
+      Color c15b = c15.brightness(b) ;
+      Color c05b = c05.brightness(b) ;
+      Color c01b = c01.brightness(b) ;
+      Color hb   = settings._colHour  .brightness(b) ;
+      Color mb   = settings._colMinute.brightness(b) ;
+      Color sb   = settings._colSecond.brightness(b) ;
+  
+      for (unsigned char i = 0 ; i < 60 ; ++i)
+      {
+        Color c ;
+
+        if (i == (hour*5 + minute/12)) c = hb ;
+        if (i == minute)               c.mix(mb) ;
+        if (i == second)               c.mix(sb) ;
+
+        if (!c)
+        {
+          if      ((i % 15) == 0) c = c15b ;
+          else if ((i %  5) == 0) c = c05b ;
+          else                    c = c01b ;
+        }
+
+        ws2812.setPixelColor(i, c.rgb()) ;
+      }
+    }
+    break ;
+  case State::Off:
+    {
+      for (uint8_t i = 0 ; i < 60 ; ++i)
+        ws2812.setPixelColor(i, 0) ;
+    }
   }
   ws2812.show() ;
 }

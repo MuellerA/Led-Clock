@@ -30,7 +30,7 @@ wire_height    =  1.6 ; // [0:0.2:3]
 wire_width     =  3   ; // [0:0.2:5]
 
 // split clock in parts
-parts          =  1   ; // [1:one, 2:two, 4:four]
+parts          =  1   ; // [1:one, 2:two, 4:four, 0:center]
 
 /* [Hidden] */
 
@@ -105,26 +105,130 @@ module wire()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+module center()
+{
+  module ic(x, y)
+  {
+    h = 3 ;
+    w = 0.8 ;
+
+    difference()
+    {
+      translate([0, 0, (h+w)/2])
+      cube([x+2*w, y+2*w, h+w], center=true) ;
+
+      translate([0, 0, (h+w)/2])
+      cube([x, y, 2*(h+w)], center = true) ;
+    }
+
+    x2 = x - 10 ;
+    difference()
+    {
+      translate([0, 0, h/2])
+      cube([x2, y, h], center = true) ;
+
+      translate([0, 0, 1.5*h-w])
+      cube([x2-2*w, y, h], center = true) ;
+    }
+  }
+  
+  rO = radius_inner - 1 ;
+  rI = rO - width ;
+
+  rLdrI = 3.5 ;
+  rLdrO = rLdrI + width ;
+  
+  da = 360 / ws_count ;
+  
+  difference() // housing
+  {
+    union()
+    {
+      difference() // housing
+      {
+        translate([0, 0, height/2])
+        cylinder(r = rO, h = height, center=true) ;
+
+        translate([0, 0, height/2 + width])
+        cylinder(r = rI, h = height, center=true) ;
+      }
+
+      translate([-10, 14, 0])
+      {
+        translate([0, 0, height/2]) // LDR hole
+        cylinder(r = rLdrO, h=height, center=true) ;
+      }
+    }
+
+    translate([-10, 14, 0])
+    {
+      translate([0, 0, height/2]) // LDR hole
+      cylinder(r = rLdrI, h=height*2, center=true) ;
+
+      translate([0, 0, height/2 + height-1])  // LDR wire gap
+      cube([3*rLdrO, wire_height, height], center=true) ;
+    }
+    
+    for (a = [da/2:90:360]) // wire holes
+    rotate([0, 0, -a])
+    translate([0, rO, height])
+    cube([2*wire_width, rO, 4*wire_height], center=true) ;
+  }
+
+  // hook
+  translate([0, 28, height/2])
+  {
+    difference()
+    {
+      cylinder(r = 4+1.5*width, h = height, center=true) ;
+      translate([0, 0, -1.5*width])
+      cylinder(r = 4      , h = height, center=true) ;
+      translate([0, -2*height, 0])
+      cube([4*height, 4*height, 4*height], center=true) ;
+    }
+  }
+  
+  // voltage regulator
+  translate([-15, -10, width-0.1]) ic(21, 31) ;
+  
+  // "nodemcu" like ESP board
+  translate([12, 0, width-0.1]) ic(27,51) ;
+
+  // text
+  translate([0,-35,width/2])
+  linear_extrude(height=width)
+  text(text = "7V-16V =", size = 3, halign = "center"); 
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Main
 ////////////////////////////////////////////////////////////////////////////////
 
-difference ()
+if (parts != 0)
 {
-  translate([0, 0, (height+width)/2]) cylinder(r = radius_outer, h = height + width, center = true) ;
-  translate([0, 0, (height+width)/2]) cylinder(r = radius_inner, h = 2 * (height + width), center = true) ;
-
-  translate([0, 0, width]) ws() ;
-  wire() ;
-
-  if (parts == 4)
+  difference ()
   {
-    translate([2*radius_outer, 0, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
-    translate([0, 2*radius_outer, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
+    translate([0, 0, (height+width)/2]) cylinder(r = radius_outer, h = height + width, center = true) ;
+    translate([0, 0, (height+width)/2]) cylinder(r = radius_inner, h = 2 * (height + width), center = true) ;
+
+    translate([0, 0, width]) ws() ;
+    wire() ;
+
+    if (parts == 4)
+    {
+      translate([2*radius_outer, 0, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
+      translate([0, 2*radius_outer, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
+    }
+    if ((parts == 4) || (parts == 2))
+    {
+      translate([2*radius_outer, 0, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
+    }
   }
-  if ((parts == 4) || (parts == 2))
-  {
-    translate([2*radius_outer, 0, (height+width)/2]) cube([4*radius_outer, 4*radius_outer, 2*(height + width)], center = true) ;
-  }
+}
+else // center
+{
+  center() ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

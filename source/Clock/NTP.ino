@@ -182,11 +182,7 @@ void Ntp::printSerial(const Ntp::NtpData &data) const
 
 String Ntp::toLocalString()
 {
-  uint64_t t = local() ;
-  
-  char buff[16] ;
-  sprintf(buff, "%02ld:%02ld:%02ld", (long)(t / 60 / 60 % 24), (long)(t / 60 % 60), (long)(t % 60)) ;
-  return String(buff) ;
+  return timeToString((uint32_t)(local() % (24*60*60))) ;
 }
 
 bool Ntp::fromLocalString1(const String &s, uint8_t offset, uint8_t &v) const

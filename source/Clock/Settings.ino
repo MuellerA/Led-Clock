@@ -16,55 +16,60 @@ void Settings::load()
 {
   Serial.println("Settings::load") ;
 
- _apSsid = "Clock" ;
- _apPsk  = HostName ;
- _apChan = 8 ;
+  _state = State::On ;
+  _apSsid = "Clock" ;
+  _apPsk  = HostName ;
+  _apChan = 8 ;
 
- String str ;
- File cfg = SPIFFS.open(SettingsFileName, "r") ;
+  String str ;
+  File cfg = SPIFFS.open(SettingsFileName, "r") ;
 
- if (!cfg)
-   return ;
+  if (!cfg)
+    return ;
 
- str = fileRead(cfg) ;
+  str = fileRead(cfg) ;
  
- if (str == SettingsMagic)
- {
-   _ssid = fileRead(cfg) ;
-   _psk  = fileRead(cfg) ;
-   _ntp  = fileRead(cfg) ;
+  if (str == SettingsMagic)
+  {
+    _ssid = fileRead(cfg) ;
+    _psk  = fileRead(cfg) ;
+    _ntp  = fileRead(cfg) ;
 
-   _colHour  .fromString(fileRead(cfg)) ;
-   _colMinute.fromString(fileRead(cfg)) ;
-   _colSecond.fromString(fileRead(cfg)) ;
+    _colHour  .fromString(fileRead(cfg)) ;
+    _colMinute.fromString(fileRead(cfg)) ;
+    _colSecond.fromString(fileRead(cfg)) ;
 
-   uint8_t tmp ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstMonth = (TZ::Month)tmp ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstWeek  = (TZ::Week) tmp ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstDay   = (TZ::Day)  tmp ;
-   ascInt2bin(fileRead(cfg), _tzDstHour  ) ;
-   ascInt2bin(fileRead(cfg), _tzDstOffset) ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdMonth = (TZ::Month)tmp ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdWeek  = (TZ::Week) tmp ;
-   ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdDay   = (TZ::Day)  tmp ;
-   ascInt2bin(fileRead(cfg), _tzStdHour  ) ;
-   ascInt2bin(fileRead(cfg), _tzStdOffset) ;
+    uint8_t tmp ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstMonth = (TZ::Month)tmp ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstWeek  = (TZ::Week) tmp ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstDay   = (TZ::Day)  tmp ;
+    ascInt2bin(fileRead(cfg), _tzDstHour  ) ;
+    ascInt2bin(fileRead(cfg), _tzDstOffset) ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdMonth = (TZ::Month)tmp ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdWeek  = (TZ::Week) tmp ;
+    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdDay   = (TZ::Day)  tmp ;
+    ascInt2bin(fileRead(cfg), _tzStdHour  ) ;
+    ascInt2bin(fileRead(cfg), _tzStdOffset) ;
 
-   ascInt2bin(fileRead(cfg), tmp) ; _lang = (Lang)tmp ;
+    ascInt2bin(fileRead(cfg), tmp) ; _lang = (Lang)tmp ;
    
-   // magic aendern!
+    ascInt2bin(fileRead(cfg), tmp) ; _autoOnOffEnable = tmp != 0 ;
+    ascInt2bin(fileRead(cfg), _autoOnOffOn ) ;
+    ascInt2bin(fileRead(cfg), _autoOnOffOff) ;
 
-   tz.resetRules() ;
-   tz.addRule( { _tzDstMonth, _tzDstWeek, _tzDstDay, _tzDstHour, _tzDstOffset } ) ;
-   tz.addRule( { _tzStdMonth, _tzStdWeek, _tzStdDay, _tzStdHour, _tzStdOffset } ) ;
- }
+    // magic aendern!
 
- if (_ntp.length())
-   ntp.start() ;
- else
-   ntp.stop() ;
+    tz.resetRules() ;
+    tz.addRule( { _tzDstMonth, _tzDstWeek, _tzDstDay, _tzDstHour, _tzDstOffset } ) ;
+    tz.addRule( { _tzStdMonth, _tzStdWeek, _tzStdDay, _tzStdHour, _tzStdOffset } ) ;
+  }
+
+  if (_ntp.length())
+    ntp.start() ;
+  else
+    ntp.stop() ;
  
- cfg.close() ;
+  cfg.close() ;
 }
 
 void Settings::save() const
@@ -98,7 +103,11 @@ void Settings::save() const
   cfg.println(         _tzStdOffset) ;
 
   cfg.println((uint8_t)_lang) ;
-  
+
+  cfg.println(_autoOnOffEnable ? 1 : 0) ;
+  cfg.println(_autoOnOffOn ) ;
+  cfg.println(_autoOnOffOff) ;
+
   // magic aendern!
   
   cfg.close() ;

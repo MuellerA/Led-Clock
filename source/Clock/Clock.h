@@ -58,6 +58,12 @@ enum class Lang
   Size // last
 } ;
 
+enum class State
+{
+  Off,
+  On,
+} ;
+
 struct Settings
 {
   Settings() = default ;
@@ -69,6 +75,12 @@ struct Settings
 
   // Language
   Lang _lang { Lang::DE } ;
+
+  // State
+  State _state { State::On } ;
+  bool     _autoOnOffEnable = false ;
+  uint32_t _autoOnOffOn     = 6 * 60*60 ;
+  uint32_t _autoOnOffOff    = 0 * 60*60 ;
   
   // Wifi Access Point
   String _apSsid ;

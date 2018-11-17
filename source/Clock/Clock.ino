@@ -6,7 +6,7 @@
 #define HTTPS_None    0
 #define HTTPS_axTLS   1
 #define HTTPS_BearSSL 2
-#define HTTPS HTTPS_axTLS
+#define HTTPS HTTPS_None
 
 #include <ESP8266WiFi.h>
 #if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
@@ -219,8 +219,7 @@ void updateClock(uint64_t localTime)
     break ;
   case State::Off:
     {
-      for (uint8_t i = 0 ; i < 60 ; ++i)
-        ws2812.setPixelColor(i, 0) ;
+      ws2812.clear() ;
     }
   }
   ws2812.show() ;

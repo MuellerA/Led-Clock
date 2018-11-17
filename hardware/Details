@@ -2,7 +2,10 @@
 WS2812 LED Clock or Wheel of Fortune or ...
 
 [Summary]
-This was designed as a clock, but as it's customizable the number of LEDs can be changed as well as the dimensions.
+This was designed as a clock, but it is customizable and the number of LEDs can be changed as well as the dimensions.
+
+Update 2018-11-17:
+Added a center part to mount the electronics controlling the clock. Software and some instructions for an ESP8266 are available at [GitHub](https://github.com/MuellerA/Led-Clock)
 
 [Tags]
 WS2812 LED Clock customizable parametric

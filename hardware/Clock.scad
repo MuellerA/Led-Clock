@@ -133,7 +133,7 @@ module center()
     }
   }
   
-  rO = radius_inner - 1 ;
+  rO = radius_inner - 0.5 ;
   rI = rO - width ;
 
   rLdrI = 3.5 ;

@@ -3,7 +3,7 @@ CP       = /bin/cp -a
 RM       = /bin/rm -f
 
 SCAD 	= Clock
-STL 	= Clock-120-40-13-60-1 Clock-120-40-13-60-4 Clock-50-5-40-6-1
+STL 	= Clock-120-40-13-60-1 Clock-120-40-13-60-4 Clock-50-5-40-6-1 Clock-120-40-13-60-0
 IMG 	= Clock1.jpg Clock2.jpg Clock3.jpg
 
 ALL:	$(addprefix TV/,$(addsuffix .stl,$(STL))) $(addprefix TV/,$(addsuffix .scad,$(SCAD))) $(addprefix TV/,$(IMG))

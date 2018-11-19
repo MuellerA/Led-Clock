@@ -147,16 +147,18 @@ public:
   void     start() ; // enable transmitting ntp messages
   void     stop() ;  // disable transmitting ntp messages
   
-  bool     valid()  { return _valid ; } // a time was set (manually or by NTP)
-  bool     active() { return _isUtc ; } // time was received via NTP
+  bool     valid()  const { return _valid ; } // a time was set (manually or by NTP)
+  bool     isNtp()  const { return _isNtp ; } // time was received via NTP
   bool     inc() ; // time changed
-  uint64_t local() ; // current local time
+  uint64_t local() const ; // current local time
   void     setLocal(uint64_t local) ;
   
   void printSerial(const NtpData &data) const ;
 
-  String toLocalString() ;
+  String toLocalString() const ;
   bool   fromLocalString(const String &str) ;
+  bool   isSync() const ; // last succesful sync is not too long ago
+  String lastSyncToString() const ;
   
   static uint16_t port() { return 123 ; }
   static uint16_t size() { return sizeof(NtpData) ; }
@@ -167,22 +169,26 @@ private:
   bool fromLocalString1(const String &s, uint8_t offset, uint8_t &v) const ;
 
 private:
-  static const int _delayWait    =      10 * 1000 ; // 10 sec
+  static const int _delayWait    =      15 * 1000 ; // 15 sec
   static const int _delaySuccess = 30 * 60 * 1000 ; // 30 min
-
+  
+  static const int _delayWarnSyncNtp    =       6 * 60 * 60 ; // 3 hour
+  static const int _delayWarnSyncManual =  7 * 24 * 60 * 60 ; // 1 week
+  
   NtpData _txData ;
   NtpData _rxData ;
 
-  State    _state   = State::off ;
-  bool     _valid   = false ;
-  bool     _next59  = false ;
-  bool     _next61  = false ;
-  uint32_t _lastInc     = 0 ; // last millis when inc'ed current time
-  uint32_t _lastRequest = 0 ; // millis of last request
-  uint64_t _tsReceived  = 0 ; // last received ntp time
-  uint64_t _tsTransmit  = 0 ; // last tx timestamp
-  bool     _isUtc    = false ;
-  uint64_t _current  = 0 ;    // current utc or local time
+  State    _state       = State::off ;
+  bool     _valid       = false ;
+  bool     _next59      = false ;
+  bool     _next61      = false ;
+  uint32_t _lastInc     = 0 ;     // last millis when inc'ed current time
+  uint32_t _lastRequest = 0 ;     // millis of last request
+  uint64_t _tsReceived  = 0 ;     // last received ntp time
+  uint64_t _tsTransmit  = 0 ;     // last tx timestamp
+  bool     _isNtp       = false ; // NTP vs manual setting (== utc time vs local time)
+  uint64_t _current     = 0 ;     // current utc or local time
+  uint64_t _lastSync    = 0 ;     // last sync (ntp or manual)
   
 } ;
 

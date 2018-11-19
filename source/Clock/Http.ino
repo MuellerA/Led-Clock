@@ -156,94 +156,126 @@ Translate transThird     { "Third"    , "Dritter"   } ;
 Translate transFourth    { "Fourth"   , "Vierter"   } ;
 Translate transLast      { "Last"     , "Letzter"   } ;
 
-Translate translateWords[] =
-  {
-    { "Switch On/Off"   , "Ein-/Ausschalten"        },
-    { "Off"             , "Aus"                     },
-    { "On"              , "Ein"                     },
-    { "Automatic"       , "Automatisch"             },
-    { "Clock"           , "Uhr"                     },
-    { "Home"            , "Startseite"              },
-    { "Settings"        , "Einstellungen"           },
-    { "Update"          , "Aktualisieren"           },
-    { "Reboot"          , "Neustart"                },
-    { "manual"          , "manuell"                 },
-    { "Save On/Off"     , "Automatik speichern"     },
-    { "Save Color"      , "Farbe speichern"         },
-    { "Save WiFi"       , "WLAN speichern"          },
-    { "Save Time"       , "Zeit speichern"          },
-    { "Save NTP"        , "NTP speichern"           },
-    
-    { "WiFi"            , "WLAN"                },
-    { "Color"           , "Farbe"               },
-    { "Hour"            , "Stunde"              },
-    { "Minute"          , "Minute"              },
-    { "Second"          , "Sekunde"             },
-    { "Time"            , "Zeit"                },
-    { "Timezone"        , "Zeitzone"            },
-    { "Daylight Saving Time", "Sommerzeit"      },
-    { "Standard Time"   , "Normalzeit"          },
-    { "Start"           , "Start"               },
-    { "End"             , "Ende"                },
-    { "Month"           , "Monat"               },
-    { "Week"            , "Woche"               },
-    { "Day"             , "Tag"                 },
-    { "Hour"            , "Stunde"              },
-    { "Offset to UTC (min)" , "Abstand zu UTC (Min)" },
+static const std::map<String, Translate> TranslateWord
+{
+  { "Switch On/Off"       , { "Switch On/Off"       , "Ein-/Ausschalten"    } },
+  { "Off"                 , { "Off"                 , "Aus"                 } },
+  { "On"                  , { "On"                  , "Ein"                 } },
+  { "Automatic"           , { "Automatic"           , "Automatisch"         } },
+  { "Clock"               , { "Clock"               , "Uhr"                 } },
+  { "Home"                , { "Home"                , "Startseite"          } },
+  { "Settings"            , { "Settings"            , "Einstellungen"       } },
+  { "Update"              , { "Update"              , "Aktualisieren"       } },
+  { "Reboot"              , { "Reboot"              , "Neustart"            } },
+  { "manual"              , { "manual"              , "manuell"             } },
+  { "Save On/Off"         , { "Save On/Off"         , "Automatik speichern" } },
+  { "Save Color"          , { "Save Color"          , "Farbe speichern"     } },
+  { "Save WiFi"           , { "Save WiFi"           , "WLAN speichern"      } },
+  { "Save Time"           , { "Save Time"           , "Zeit speichern"      } },
+  { "Save NTP"            , { "Save NTP"            , "NTP speichern"       } },
+                        
+  { "WiFi"                , { "WiFi"                , "WLAN"                } },
+  { "Color"               , { "Color"               , "Farbe"               } },
+  { "Hour"                , { "Hour"                , "Stunde"              } },
+  { "Minute"              , { "Minute"              , "Minute"              } },
+  { "Second"              , { "Second"              , "Sekunde"             } },
+  { "Time"                , { "Time"                , "Zeit"                } },
+  { "Timezone"            , { "Timezone"            , "Zeitzone"            } },
+  { "Daylight Saving Time", { "Daylight Saving Time", "Sommerzeit"          } },
+  { "Standard Time"       , { "Standard Time"       , "Normalzeit"          } },
+  { "Start"               , { "Start"               , "Start"               } },
+  { "End"                 , { "End"                 , "Ende"                } },
+  { "Month"               , { "Month"               , "Monat"               } },
+  { "Week"                , { "Week"                , "Woche"               } },
+  { "Day"                 , { "Day"                 , "Tag"                 } },
+  { "Hour"                , { "Hour"                , "Stunde"              } },
+  { "Offset to UTC (min)" , { "Offset to UTC (min)" , "Abstand zu UTC (Min)"} },
 
-    transJanuary,
-    transFebruary,
-    transMarch,
-    transApril,
-    transMay,
-    transJune,
-    transJuly,
-    transAugust,
-    transSeptember,
-    transOctober,
-    transNovember,
-    transDecember,
+    
+  { transJanuary  ._lang[0], transJanuary   },
+  { transFebruary ._lang[0], transFebruary  },
+  { transMarch    ._lang[0], transMarch     },
+  { transApril    ._lang[0], transApril     },
+  { transMay      ._lang[0], transMay       },
+  { transJune     ._lang[0], transJune      },
+  { transJuly     ._lang[0], transJuly      },
+  { transAugust   ._lang[0], transAugust    },
+  { transSeptember._lang[0], transSeptember },
+  { transOctober  ._lang[0], transOctober   },
+  { transNovember ._lang[0], transNovember  },
+  { transDecember ._lang[0], transDecember  },
                   
-    transSunday,
-    transMonday,
-    transTuesday,
-    transWednesday,
-    transThursday,
-    transFriday,
-    transSaturday,
+  { transSunday   ._lang[0], transSunday    },
+  { transMonday   ._lang[0], transMonday    },
+  { transTuesday  ._lang[0], transTuesday   },
+  { transWednesday._lang[0], transWednesday },
+  { transThursday ._lang[0], transThursday  },
+  { transFriday   ._lang[0], transFriday    },
+  { transSaturday ._lang[0], transSaturday  },
                   
-    transFirst,
-    transSecond,
-    transThird,
-    transFourth,
-    transLast,
+  { transFirst    ._lang[0], transFirst     },
+  { transSecond   ._lang[0], transSecond    },
+  { transThird    ._lang[0], transThird     },
+  { transFourth   ._lang[0], transFourth    },
+  { transLast     ._lang[0], transLast      },
+} ;
+
+static const std::map<String,std::function<String()> > TranslateFunc
+{
+  { "@NtpManual"   , [](){ return ntp.isNtp() ? "NTP" : translate("manual") ; } },
+  { "@NtpManual"   , [](){ return ntp.isNtp() ? "NTP" : translate("manual") ; } },
+  { "@NtpTime"     , [](){ return ntp.toLocalString() ; } },
+  { "@LastSync"    , [](){ return ntp.lastSyncToString() ; } },
+  { "@Ntp"         , [](){ return settings._ntp ; } },
+  { "@Ssid"        , [](){ return settings._ssid ; } },
+  { "@ColHour"     , [](){ return settings._colHour.toString() ; } },
+  { "@ColMinute"   , [](){ return settings._colMinute.toString() ; } },
+  { "@ColSecond"   , [](){ return settings._colSecond.toString() ; } },
+  { "@DstMonth"    , [](){ return inputMonth("tzDstMonth" , settings._tzDstMonth ) ; } },
+  { "@DstWeek"     , [](){ return inputWeek ("tzDstWeek"  , settings._tzDstWeek  ) ; } },
+  { "@DstDay"      , [](){ return inputDay  ("tzDstDay"   , settings._tzDstDay   ) ; } },
+  { "@DstHour"     , [](){ return inputInt  ("tzDstHour"  , settings._tzDstHour  , (uint8_t)   0, (uint8_t) 23) ; } },
+  { "@DstOffset"   , [](){ return inputInt  ("tzDstOffset", settings._tzDstOffset, (int16_t)-840, (int16_t)840) ; } },
+  { "@StdMonth"    , [](){ return inputMonth("tzStdMonth" , settings._tzStdMonth ) ; } },
+  { "@StdWeek"     , [](){ return inputWeek ("tzStdWeek"  , settings._tzStdWeek  ) ; } },
+  { "@StdDay"      , [](){ return inputDay  ("tzStdDay"   , settings._tzStdDay   ) ; } },
+  { "@StdHour"     , [](){ return inputInt  ("tzStdHour"  , settings._tzStdHour  , (uint8_t)   0, (uint8_t) 23) ; } },
+  { "@StdOffset"   , [](){ return inputInt  ("tzStdOffset", settings._tzStdOffset, (int16_t)-840, (int16_t)840) ; } },
+  { "@AutoOnOffEa" , [](){ return settings._autoOnOffEnable ? "checked" : "" ; } },
+  { "@AutoOnOffOn" , [](){ return timeToString(settings._autoOnOffOn) ; } },
+  { "@AutoOnOffOff", [](){ return timeToString(settings._autoOnOffOff) ; } },
 } ;
 
 String translate(const String &orig)
 {
-  for (const Translate &t : translateWords)
-    if (t._lang[0] == orig) return t() ;
+  auto iWord = TranslateWord.find(orig) ;
+  if (iWord != TranslateWord.end())
+    return iWord->second() ;
 
-  if      (orig == "@NtpManual"   ) return ntp.active() ? "(NTP)" : translate("(manual)") ;
-  else if (orig == "@NtpTime"     ) return ntp.toLocalString() ;
-  else if (orig == "@Ntp"         ) return settings._ntp ;
-  else if (orig == "@Ssid"        ) return settings._ssid ;
-  else if (orig == "@ColHour"     ) return settings._colHour.toString() ;
-  else if (orig == "@ColMinute"   ) return settings._colMinute.toString() ;
-  else if (orig == "@ColSecond"   ) return settings._colSecond.toString() ;
-  else if (orig == "@DstMonth"    ) return inputMonth("tzDstMonth" , settings._tzDstMonth ) ;
-  else if (orig == "@DstWeek"     ) return inputWeek ("tzDstWeek"  , settings._tzDstWeek  ) ;
-  else if (orig == "@DstDay"      ) return inputDay  ("tzDstDay"   , settings._tzDstDay   ) ;
-  else if (orig == "@DstHour"     ) return inputInt  ("tzDstHour"  , settings._tzDstHour  , (uint8_t)   0, (uint8_t) 23) ;
-  else if (orig == "@DstOffset"   ) return inputInt  ("tzDstOffset", settings._tzDstOffset, (int16_t)-840, (int16_t)840) ;
-  else if (orig == "@StdMonth"    ) return inputMonth("tzStdMonth" , settings._tzStdMonth ) ;
-  else if (orig == "@StdWeek"     ) return inputWeek ("tzStdWeek"  , settings._tzStdWeek  ) ;
-  else if (orig == "@StdDay"      ) return inputDay  ("tzStdDay"   , settings._tzStdDay   ) ;
-  else if (orig == "@StdHour"     ) return inputInt  ("tzStdHour"  , settings._tzStdHour  , (uint8_t)   0, (uint8_t) 23) ;
-  else if (orig == "@StdOffset"   ) return inputInt  ("tzStdOffset", settings._tzStdOffset, (int16_t)-840, (int16_t)840) ;
-  else if (orig == "@AutoOnOffEa" ) return settings._autoOnOffEnable ? "checked" : "" ;
-  else if (orig == "@AutoOnOffOn" ) return timeToString(settings._autoOnOffOn) ;
-  else if (orig == "@AutoOnOffOff") return timeToString(settings._autoOnOffOff) ;
+  auto iFunc = TranslateFunc.find(orig) ;
+  if (iFunc != TranslateFunc.end())
+    return iFunc->second() ;
+  
+  if (orig == "#LastSync")
+  {
+    String s ;
+    switch ((unsigned int)settings._lang)
+    {
+    case 0:
+      s += "Last synchronization (" ;
+      s += ntp.isNtp() ? "NTP" : translate("manual") ;
+      s += ") " ;
+      s += ntp.lastSyncToString() ;
+      s += " ago" ;
+      return s ;
+    case 1:
+      s += "Letzte Synchronisation (" ;
+      s += ntp.isNtp() ? "NTP" : translate("manual") ;
+      s += ") vor " ;
+      s += ntp.lastSyncToString() ;
+      return s ;
+    }
+  }
   
   return orig ;
 }
@@ -343,8 +375,8 @@ const char HttpHome_P[] PROGMEM =
   R"(<p style="font-size: small">
 <a href="/settings.html">%Settings%</a> <a href="/update">%Update%</a> <a href="/reboot">%Reboot%</a>
 </p>
-<div>
-<span class="border" style="font-size: 500%%">%@NtpTime%</span> %@NtpManual%
+<p><span class="border" style="font-size: 500%%">%@NtpTime%</span></p>
+<p><span style="font-size: 66%%">%#LastSync%</span></p>
 </div>)" ;
 
 ////////////////////////////////////////////////////////////////////////////////

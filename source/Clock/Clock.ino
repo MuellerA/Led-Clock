@@ -6,7 +6,7 @@
 #define HTTPS_None    0
 #define HTTPS_axTLS   1
 #define HTTPS_BearSSL 2
-#define HTTPS HTTPS_None
+#define HTTPS HTTPS_axTLS
 
 #include <ESP8266WiFi.h>
 #if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
@@ -20,6 +20,7 @@
 
 #include <Adafruit_NeoPixel.h>
 
+#include <map>
 #include <functional>
 
 #include "timezone.h"
@@ -184,6 +185,8 @@ void updateClock(uint64_t localTime)
       static Color c15(0x18, 0x18, 0x18) ;
       static Color c05(0x08, 0x08, 0x08) ;
       static Color c01(0x00, 0x00, 0x00) ;
+      static Color c15w(0x20, 0x00, 0x00) ;
+      static Color c05w(0x0b, 0x00, 0x00) ;
   
       uint8_t second = localTime % 60 ;
       uint8_t minute = localTime / 60 % 60 ;
@@ -191,8 +194,8 @@ void updateClock(uint64_t localTime)
 
       double b = brightness() ;
 
-      Color c15b = c15.brightness(b) ;
-      Color c05b = c05.brightness(b) ;
+      Color c15b = ntp.isSync() ? c15.brightness(b) : c15w.brightness(b) ;
+      Color c05b = ntp.isSync() ? c05.brightness(b) : c05w.brightness(b) ;
       Color c01b = c01.brightness(b) ;
       Color hb   = settings._colHour  .brightness(b) ;
       Color mb   = settings._colMinute.brightness(b) ;

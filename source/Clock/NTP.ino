@@ -106,9 +106,10 @@ bool Ntp::rx(WiFiUDP &udp)
   uint64_t utc = (_tsReceived >> 32) ; // ntp pico second to utc second conversion
   if (utc < 0x80000000) // assume ntp era 1
     utc += 0x100000000ULL ;
-  utc -= 2208988800UL ;
+  utc -= 2208988800UL ; // 70 years: ntp base is 1900, utp base is 1970
   _current = utc ;
-  _isUtc = true ;
+  _lastSync = _current ;
+  _isNtp = true ;
   _valid = true ;
   _lastInc = now ; // todo: take transmitTsFrac into account
   
@@ -126,7 +127,7 @@ bool Ntp::inc()
     if (now - _lastInc < 1000)
       return false ;
 
-    if (_isUtc)
+    if (_isNtp)
     {
       while (now - _lastInc >= 1000)
       {  
@@ -149,18 +150,19 @@ bool Ntp::inc()
     }
 }
 
-uint64_t Ntp::local()
+uint64_t Ntp::local() const
 {
-  return _isUtc ? tz.utcToLoc(_current) : _current ;
+  return _isNtp ? tz.utcToLoc(_current) : _current ;
 }
 
 void Ntp::setLocal(uint64_t local)
 {
   uint32_t now = millis() ;
   _current    = local ;
-  _isUtc      = false ;
+  _isNtp      = false ;
   _valid      = true ;
   _lastInc    = now ;
+  _lastSync   = _current ;
 }
 
 void Ntp::printSerial(const Ntp::NtpData &data) const
@@ -180,7 +182,7 @@ void Ntp::printSerial(const Ntp::NtpData &data) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-String Ntp::toLocalString()
+String Ntp::toLocalString() const
 {
   return timeToString((uint32_t)(local() % (24*60*60))) ;
 }
@@ -212,6 +214,32 @@ bool Ntp::fromLocalString(const String &str)
     return true ;
   }
   return false ;
+}
+
+bool Ntp::isSync() const
+{
+  if (!_valid)
+    return true ; // no time set yet
+
+  return (_current - _lastSync) < ((_isNtp) ? _delayWarnSyncNtp : _delayWarnSyncManual) ;
+}
+
+String Ntp::lastSyncToString() const
+{
+  uint32 diff = _current - _lastSync ;
+
+  uint32_t sec  = diff % 60 ;
+  uint32_t min  = diff / 60 % 60 ;
+  uint32_t hour = diff / 60 / 60 % 24 ;
+  uint32_t day  = diff / 60 / 60 / 24 ;
+
+  String lastSync ;
+
+  if (lastSync.length() || day ) lastSync += String(day ) + "d " ;
+  if (lastSync.length() || hour) lastSync += String(hour) + "h " ;
+  if (lastSync.length() || min ) lastSync += String(min ) + "m " ;
+                                 lastSync += String(sec ) + "s"  ;
+  return lastSync ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

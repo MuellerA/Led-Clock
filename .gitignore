@@ -5,5 +5,7 @@
 source/Clock/data/*
 source/*.pem
 source/*.der
+hardware/*.stl
+hardware/*.gcode
 
 ################################################################################

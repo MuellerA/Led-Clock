@@ -31,12 +31,6 @@ void WifiStationDisconnected(const WiFiEventStationModeDisconnected &disconnecte
 
   WifiConnected = false ;
   WifiConnectionLostMs = millis() ;
-
-  if (disconnected.reason == WIFI_DISCONNECT_REASON_AUTH_FAIL)
-  {
-    WiFi.setAutoReconnect(false) ;
-    WifiApStart() ;
-  }
 }
 WiFiEventHandler wifiStationDisconnectedCb ;
 

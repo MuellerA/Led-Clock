@@ -6,13 +6,19 @@
 #define HTTPS_None    0
 #define HTTPS_axTLS   1
 #define HTTPS_BearSSL 2
-#define HTTPS HTTPS_axTLS
+#define HTTPS HTTPS_None
 
 #include <ESP8266WiFi.h>
-#if (HTTPS == HTTPS_axTLS) || (HTTPS == HTTPS_BearSSL)
-#include <ESP8266WebServerSecure.h>
-#else
+#if (HTTPS == HTTPS_axTLS)
+#  include <WiFiClientSecure.h>
+#  include <ESP8266WebServerSecureAxTLS.h>
+#elif (HTTPS == HTTPS_BearSSL)
+#  include <WiFiClientSecure.h>
+#  include <ESP8266WebServerSecureBearSSL.h>
+#elif (HTTPS == HTTPS_None)
 #include <ESP8266WebServer.h>
+#else
+#error "unknown macro HTTPS "
 #endif
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiUdp.h>

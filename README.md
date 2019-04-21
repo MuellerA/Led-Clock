@@ -12,8 +12,8 @@
   <li>Use NTP for time synchronization</li>
   <li>Convert from UTC to local time and DST</li>
   <li>Manual and automatic time triggered On/Off</li>
-  <li>Secure HTTPS communication</li>
-  <li>OTA update [only with HTTP, connection times out with HTTPS :-( ]</li>
+  <li>OTA update</li>
+  <li>Optional secure HTTPS communication</li>
 </ul>
 
 <h2>Used Libraries</h2>
@@ -34,8 +34,10 @@
 
 <h2>Setup</h2>
 <ol>
-  <li>Open the Arduino IDE and load the Clock.ino sketch</li>
-  <li>In the Tools menu set the "Flash size" to use SPIFS</li>
+  <li>Open the Arduino IDE</li>
+  <li>Install the required libraries</li>
+  <li>Check the <a href="source/ArduinoSettings.png">Board Settings</a></li>
+  <li>Load the Clock.ino sketch</li>
   <li>Flash the ESP8266 using Arduino IDE</li>
   <li>
     Connect the NodeMCU with the buck converter, WS2812 LEDs and the photo resistor:<br/>
@@ -44,7 +46,7 @@
 </ol>
 
 <h2>Security</h2>
-<p>By default the Clock uses https for communication. This can be disabled in Clock.ino (#define HTTPS HTTPS_None), it might be necessary if you want to use OTA updates.</p>
+<p>By default the Clock does not use https for communication, it's too slow. Https can be enabled in Clock.ino (#define HTTPS ...).</p>
 <p>The repository contains a certificate and private key, but you should use your own. To create and upload them:</p>
 <ol>
   <li>Run the script "source/make-cert.sh" to create the certificate file "cert.der" and the private key file "key.der". The script requires <a href="https://www.openssl.org/">OpenSSL</a> to be installed.</li>

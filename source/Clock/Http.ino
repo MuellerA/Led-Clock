@@ -61,6 +61,9 @@ void HttpSetup()
 #endif
   
   httpServer.on("/", httpOnHome) ;
+  httpServer.on("/on", httpOnOn) ;
+  httpServer.on("/off", httpOnOff) ;
+  httpServer.on("/set", httpOnSet) ;
   httpServer.on("/settings.html", httpOnSettings) ;
   httpServer.on("/clock.css", httpOnCss) ;
   httpServer.on("/reboot", httpOnReboot) ;
@@ -375,6 +378,10 @@ const char HttpHome_P[] PROGMEM =
   R"(<p style="font-size: small">
 <a href="/settings.html">%Settings%</a> <a href="/update">%Update%</a> <a href="/reboot">%Reboot%</a>
 </p>
+<form action="/set" method="post">
+  <button class="button" type="submit" name="action" value="on">%On%</button>
+  <button class="button" type="submit" name="action" value="off">%Off%</button>
+</form>
 <p><span class="border" style="font-size: 500%%">%@NtpTime%</span></p>
 <p><span style="font-size: 66%%">%#LastSync%</span></p>
 </div>)" ;
@@ -527,6 +534,33 @@ void httpOnCss()
   httpServer.sendContent("") ;
 }
 
+void httpOnOn()
+{
+  httpServer.sendHeader("location", "/") ;
+  httpServer.send(302);
+  settings._state = State::On ;
+}
+
+void httpOnOff()
+{
+  httpServer.sendHeader("location", "/") ;
+  httpServer.send(302);
+  settings._state = State::Off ;
+}
+
+void httpOnSet()
+{
+  httpServer.sendHeader("location", "/") ;
+  httpServer.send(302);
+
+  if (httpServer.hasArg("action"))
+  {
+    String action = httpServer.arg("action") ;
+
+    if      (action == "on"    ) settings._state = State::On  ;
+    else if (action == "off"   ) settings._state = State::Off ;
+  }
+}
 void httpOnReboot()
 {
   std::function<String(const String&)> translateReboot = [](const String& orig)

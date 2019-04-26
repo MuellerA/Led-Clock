@@ -2,7 +2,7 @@
 // Settings
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SettingsMagic    "Clock Settings V0.1"
+#define SettingsMagic    "Clock Settings V0.2"
 #define SettingsFileName "/clock.settings"
 
 String fileRead(File &cfg)
@@ -17,8 +17,10 @@ void Settings::load()
   Serial.println("Settings::load") ;
 
   _state = State::On ;
-  _apSsid = "Clock" ;
-  _apPsk  = HostName ;
+  char ssid[32] ;
+  sprintf(ssid, "Clock-%06x", ESP.getChipId()) ;
+  _apSsid = ssid ;
+  _apPsk  = PASSWORD ;
   _apChan = 8 ;
 
   String str ;
@@ -31,6 +33,9 @@ void Settings::load()
  
   if (str == SettingsMagic)
   {
+    _apSsid = fileRead(cfg) ;
+    ascIntToBin(fileRead(cfg), _apChan, (uint8_t)1, (uint8_t)14) ;
+    
     _ssid = fileRead(cfg) ;
     _psk  = fileRead(cfg) ;
     _ntp  = fileRead(cfg) ;
@@ -40,22 +45,22 @@ void Settings::load()
     _colSecond.fromString(fileRead(cfg)) ;
 
     uint8_t tmp ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstMonth = (TZ::Month)tmp ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstWeek  = (TZ::Week) tmp ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzDstDay   = (TZ::Day)  tmp ;
-    ascInt2bin(fileRead(cfg), _tzDstHour  ) ;
-    ascInt2bin(fileRead(cfg), _tzDstOffset) ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdMonth = (TZ::Month)tmp ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdWeek  = (TZ::Week) tmp ;
-    ascInt2bin(fileRead(cfg), tmp         ) ; _tzStdDay   = (TZ::Day)  tmp ;
-    ascInt2bin(fileRead(cfg), _tzStdHour  ) ;
-    ascInt2bin(fileRead(cfg), _tzStdOffset) ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzDstMonth = (TZ::Month)tmp ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzDstWeek  = (TZ::Week) tmp ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzDstDay   = (TZ::Day)  tmp ;
+    ascIntToBin(fileRead(cfg), _tzDstHour  ) ;
+    ascIntToBin(fileRead(cfg), _tzDstOffset) ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzStdMonth = (TZ::Month)tmp ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzStdWeek  = (TZ::Week) tmp ;
+    ascIntToBin(fileRead(cfg), tmp         ) ; _tzStdDay   = (TZ::Day)  tmp ;
+    ascIntToBin(fileRead(cfg), _tzStdHour  ) ;
+    ascIntToBin(fileRead(cfg), _tzStdOffset) ;
 
-    ascInt2bin(fileRead(cfg), tmp) ; _lang = (Lang)tmp ;
+    ascIntToBin(fileRead(cfg), tmp) ; _lang = (Lang)tmp ;
    
-    ascInt2bin(fileRead(cfg), tmp) ; _autoOnOffEnable = tmp != 0 ;
-    ascInt2bin(fileRead(cfg), _autoOnOffOn ) ;
-    ascInt2bin(fileRead(cfg), _autoOnOffOff) ;
+    ascIntToBin(fileRead(cfg), tmp) ; _autoOnOffEnable = tmp != 0 ;
+    ascIntToBin(fileRead(cfg), _autoOnOffOn ) ;
+    ascIntToBin(fileRead(cfg), _autoOnOffOff) ;
 
     // magic aendern!
 
@@ -82,6 +87,9 @@ void Settings::save() const
     return ;
 
   cfg.println(SettingsMagic) ;
+  
+  cfg.println(_apSsid) ;
+  cfg.println(_apChan) ;
   
   cfg.println(_ssid) ;
   cfg.println(_psk) ;

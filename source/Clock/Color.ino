@@ -57,7 +57,7 @@ String Color::toString() const
 bool Color::fromString1(const String &s, uint8_t offset, uint8_t &v) const
 {
   uint8_t hi, lo ;
-  if (ascHex2bin(s[offset+0], hi) && ascHex2bin(s[offset+1], lo))
+  if (ascHexToBin(s[offset+0], hi) && ascHexToBin(s[offset+1], lo))
   {
     v = 16 * hi + lo ;
     return true ;

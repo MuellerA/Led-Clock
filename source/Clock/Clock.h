@@ -83,9 +83,9 @@ struct Settings
   uint32_t _autoOnOffOff    = 0 * 60*60 ;
   
   // Wifi Access Point
-  String _apSsid ;
-  String _apPsk  ;
-  int    _apChan ;
+  String  _apSsid ;
+  String  _apPsk  ;
+  uint8_t _apChan ;
 
   // Wifi Station
   String _ssid ;

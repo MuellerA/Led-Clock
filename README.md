@@ -12,14 +12,15 @@
   <li>Use NTP for time synchronization</li>
   <li>Convert from UTC to local time and DST</li>
   <li>Manual and automatic time triggered On/Off</li>
-  <li>OTA update</li>
+  <li>OTA Update</li>
   <li>Optional secure HTTPS communication</li>
 </ul>
 
 <h2>Used Libraries</h2>
 <ul>
-  <li><a href="https://github.com/esp8266/Arduino">Arduino Core for ESP8266</a></li>
-  <li><a href="https://github.com/adafruit/Adafruit_NeoPixel">Adafruit NeoPixel Library</a></li>
+  <li>Arduino 1.8.0</li>
+  <li><a href="https://github.com/esp8266/Arduino">Arduino Core for ESP8266</a> (Version 2.4.2 - I had OTA Update problems with 2.5.0)</li>
+  <li><a href="https://github.com/adafruit/Adafruit_NeoPixel">Adafruit NeoPixel Library</a> (Version 1.2.1)</li>
 </ul>
 
 <h2>Material</h2>
@@ -38,12 +39,31 @@
   <li>Install the required libraries</li>
   <li>Check the <a href="source/ArduinoSettings.png">Board Settings</a></li>
   <li>Load the Clock.ino sketch</li>
+  <li>Modify the Password in password.h (it is used as PSK in Access Point mode and OTA Update password)</li>
   <li>Flash the ESP8266 using Arduino IDE</li>
   <li>
     Connect the NodeMCU with the buck converter, WS2812 LEDs and the photo resistor:<br/>
     <img src="images/Clock.sch.png" width="600" alt="schematic"/><br/>
   </li>
 </ol>
+
+<h2>First Start</h2>
+<ul>
+  <li>Open the Serial Monitor in Arduino IDE</li>
+  <li>Power on / reset the Clock</li>
+  <li>Connect to Network with SSID = "Clock-xxxxxx" and the password specified in password.h file (both shown in the Serial Monitor)</li>
+  <li>Open the web page "http://192.168.4.1"</li>
+  <li>On the Settings page enter the credentials (SSID and PSK) of your Wireless LAN and press "save"</li>
+  <li>The clock will now connect to your network, fetch the current time and display it</li>
+  <li>Check your router for the network address of the Clock and open the page in the browser to check the other settings</li>
+  <li>At next power on the clock will remember the settings</li>
+</ul>
+
+<h2>Usage</h2>
+<ul>
+  <li>The LEDs can be switched on/off manually and automatically. If automatic mode is enabled and the LEDs are switched manually, the automatic mode stays enabled and will switch at the next configured time again.</li>
+  <li>The OTA Update username is the Name specified on the Settings page and the password is the one specified in password.h file</li>
+</ul>
 
 <h2>Security</h2>
 <p>By default the Clock does not use https for communication, it's too slow. Https can be enabled in Clock.ino (#define HTTPS ...).</p>
@@ -55,17 +75,6 @@
   <li>Use the Upload Tool to upload the files to the ESP8266.</li> 
 </ol>
 
-<h2>First Start</h2>
-<ul>
-  <li>Open the Serial Monitor in Arduino IDE</li>
-  <li>Power on / reset the Clock</li>
-  <li>Connect to Network with SSID = "Clock" and PSK as shown in the Serial Monitor (e.g. "clock-123456")</li>
-  <li>Open the web page "https://192.168.4.1"</li>
-  <li>On the Settings page enter your WiFi credentials (SSID and PSK) and press "save"</li>
-  <li>The clock will now connect to the network, fetch the current time and display it</li>
-  <li>At next power on the clock will remember the settings</li>
-</ul>
-  
 <h2>3D Print</h2>
 
 <p>The OpenSCAD file to 3D Print the housing is in the hardware folder. STL files are available at <a href="https://www.thingiverse.com/thing:3130435">Thingiverse</a><br/>

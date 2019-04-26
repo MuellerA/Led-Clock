@@ -30,6 +30,7 @@
 #include <functional>
 
 #include "timezone.h"
+#include "password.h"
 #include "Clock.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,13 +67,13 @@ bool Shutdown = false ;
 ////////////////////////////////////////////////////////////////////////////////
 // util
 
-bool ascDec2bin(char c, uint8_t &d)
+bool ascDecToBin(char c, uint8_t &d)
 {
   if (('0' <= c) && (c <= '9')) { d = c - '0'      ; return true ; }
   return false ;
 }
 
-bool ascHex2bin(char c, uint8_t &h) 
+bool ascHexToBin(char c, uint8_t &h) 
 {
   if (('0' <= c) && (c <= '9')) { h = c - '0'      ; return true ; }
   if (('a' <= c) && (c <= 'f')) { h = c - 'a' + 10 ; return true ; }
@@ -81,7 +82,7 @@ bool ascHex2bin(char c, uint8_t &h)
 }
 
 template<typename T>
-bool ascInt2bin(String str, T &val)
+bool ascIntToBin(String str, T &val)
 {
   if (str.length() > 5)
     return false ;
@@ -103,7 +104,7 @@ bool ascInt2bin(String str, T &val)
   for ( ; idx < e ; ++idx)
   {
     uint8_t d ;
-    if (!ascDec2bin(str[idx], d))
+    if (!ascDecToBin(str[idx], d))
       return false ;
     v = v*10 + d ;
   }
@@ -113,10 +114,10 @@ bool ascInt2bin(String str, T &val)
 }
 
 template<typename T>
-bool ascInt2bin(String str, T &val, T min, T max)
+bool ascIntToBin(String str, T &val, T min, T max)
 {
   T val0 ;
-  if (ascInt2bin(str, val0) &&
+  if (ascIntToBin(str, val0) &&
       (min <= val0) && (val0 <= max))
   {
     val = val0 ;

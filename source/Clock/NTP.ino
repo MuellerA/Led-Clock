@@ -191,7 +191,7 @@ bool Ntp::fromLocalString1(const String &s, uint8_t offset, uint8_t &v) const
 {
   uint8_t hi, lo ;
 
-  if (ascDec2bin(s[offset+0], hi) && ascDec2bin(s[offset+1], lo))
+  if (ascDecToBin(s[offset+0], hi) && ascDecToBin(s[offset+1], lo))
   {
     v = 10 * hi + lo ;
     return true ;

@@ -212,9 +212,9 @@ void updateClock(uint64_t localTime)
       {
         Color c ;
 
-        if (i == (hour*5 + minute/12)) c = hb ;
-        if (i == minute)               c.mix(mb) ;
-        if (i == second)               c.mix(sb) ;
+        if (i == (hour*5 + (minute+6)/12) % 60) c = hb ;
+        if (i == minute)                        c.mix(mb) ;
+        if (i == second)                        c.mix(sb) ;
 
         if (!c)
         {

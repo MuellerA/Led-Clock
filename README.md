@@ -51,7 +51,7 @@
 <ul>
   <li>Open the Serial Monitor in Arduino IDE</li>
   <li>Power on / reset the Clock</li>
-  <li>Connect to Network with SSID = "Clock-xxxxxx" and the password specified in password.h file (both shown in the Serial Monitor)</li>
+  <li>Connect to Network with the SSID "Clock-xxxxxx" and the password specified in the password.h file (both are shown in the Serial Monitor)</li>
   <li>Open the web page "http://192.168.4.1"</li>
   <li>On the Settings page enter the credentials (SSID and PSK) of your Wireless LAN and press "save"</li>
   <li>The clock will now connect to your network, fetch the current time and display it</li>

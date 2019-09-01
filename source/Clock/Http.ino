@@ -22,6 +22,9 @@ static int      CustomKeyLen       = 0 ;
 static uint8_t* CustomKey          = nullptr ;
 #endif
 
+#include "faviconSvg.h"
+#include "faviconIco.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void HttpSetup()
@@ -60,13 +63,15 @@ void HttpSetup()
   }
 #endif
   
-  httpServer.on("/", httpOnHome) ;
-  httpServer.on("/on", httpOnOn) ;
-  httpServer.on("/off", httpOnOff) ;
-  httpServer.on("/set", httpOnSet) ;
+  httpServer.on("/",              httpOnHome) ;
+  httpServer.on("/clock.css",     httpOnCss) ;
+  httpServer.on("/favicon.svg",   httpOnFaviconSvg) ;
+  httpServer.on("/favicon.ico",   httpOnFaviconIco) ;
+  httpServer.on("/on",            httpOnOn) ;
+  httpServer.on("/off",           httpOnOff) ;
+  httpServer.on("/set",           httpOnSet) ;
   httpServer.on("/settings.html", httpOnSettings) ;
-  httpServer.on("/clock.css", httpOnCss) ;
-  httpServer.on("/reboot", httpOnReboot) ;
+  httpServer.on("/reboot",        httpOnReboot) ;
   
   httpUpdater.setup(&httpServer, "/update", settings._apSsid.c_str(), settings._apPsk.c_str());
   
@@ -365,8 +370,10 @@ const char HttpHeader_P[] PROGMEM =
  <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>%@Name% - %Page%</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
+  <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
   <link rel="stylesheet" href="/clock.css"/>
+  <title>%@Name% - %Page%</title>
  </head>
  <body>
   <h1>%@Name% - %Page%</h1>)" ;
@@ -404,7 +411,7 @@ const char HttpCss_P[] PROGMEM =
   margin: 0.4ex;
 }
 )" ;
-  
+
 ////////////////////////////////////////////////////////////////////////////////
 
 const char HttpReboot_P[] PROGMEM =
@@ -413,6 +420,8 @@ const char HttpReboot_P[] PROGMEM =
  <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
+  <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
   <meta http-equiv="refresh" content="10;URL=/"/>
   <title>%@Name% - %Page%</title>
  </head>
@@ -533,14 +542,6 @@ void httpOk()
   httpServer.send(200);
 }
 
-void httpOkCss()
-{
-  httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  httpServer.sendHeader("Content-Type","text/css",true);
-  httpServer.sendHeader("Cache-Control","no-cache");
-  httpServer.send(200);
-}
-
 void httpOnHome()
 {
   std::function<String(const String&)> translateHome = [](const String& orig)
@@ -555,9 +556,29 @@ void httpOnHome()
 
 void httpOnCss()
 {
-  httpOkCss() ;
-  httpServer.sendContent_P(HttpCss_P) ;
-  httpServer.sendContent("") ;
+  httpServer.setContentLength(sizeof(HttpCss_P)-1) ;
+  httpServer.sendHeader("Content-Type","text/css", true) ;
+  httpServer.send(200) ;
+
+  httpServer.sendContent_P(HttpCss_P, sizeof(HttpCss_P)-1) ;
+}
+
+void httpOnFaviconSvg()
+{
+  httpServer.setContentLength(sizeof(HttpFaviconSvg_P)-1) ;
+  httpServer.sendHeader("Content-Type","image/svg+xml", true);
+  httpServer.send(200);
+
+  httpServer.sendContent_P(HttpFaviconSvg_P, sizeof(HttpFaviconSvg_P)-1) ;
+}
+
+void httpOnFaviconIco()
+{
+  httpServer.setContentLength(sizeof(HttpFaviconIco_P)) ;
+  httpServer.sendHeader("Content-Type","image/ico", true);
+  httpServer.send(200);
+
+  httpServer.sendContent_P((const char*)HttpFaviconIco_P, sizeof(HttpFaviconIco_P)) ;
 }
 
 void httpOnOn()

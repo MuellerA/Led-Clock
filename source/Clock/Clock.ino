@@ -142,9 +142,7 @@ uint32_t stringToTime(const String &str)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const double Brightness::Min = 0.1 ;
-
-Brightness::Brightness(unsigned int pin) : _pin(pin)
+Brightness::Brightness(unsigned int pin) : _pin(pin), _min{0.1}
 {
 }
 
@@ -152,9 +150,9 @@ void Brightness::init()
 {
   unsigned long v = analogRead(_pin) ;
   
-  for (unsigned int i = 0 ; i < 16 ; ++i)
+  for (unsigned int i = 0 ; i < _size ; ++i)
     _val[i] = v ;
-  _sum = v * 16 ;
+  _sum = v * _size ;
   _idx = 0 ;
 }
 
@@ -164,13 +162,13 @@ void Brightness::update()
   _sum -= _val[_idx] ;
   _val[_idx] = v ;
   _sum += _val[_idx] ;
-  _idx = (_idx+1) % 16 ;
+  _idx = (_idx+1) % _size ;
 }
 
 double Brightness::operator()() const
 {
-  double v = (double)(_sum) / (16.0*1024.0) ;
-  return (v < Min) ? Min : v ;    
+  double v = (double)(_sum) / ((double)(_size*1024)) ;
+  return (v < _min) ? _min : v ;    
 }
 
 ////////////////////////////////////////////////////////////////////////////////

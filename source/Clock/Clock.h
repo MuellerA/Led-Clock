@@ -12,15 +12,16 @@ class HttpBuff ;
 
 struct Brightness
 {
-  const static double Min ;
+  static const size_t _size = 16 ;
   Brightness(unsigned int pin) ;
   
   void init() ;
   void update() ;
   double operator()() const ; // value between Min and 1.0
 
+  const double _min ;
   unsigned long _pin ;
-  unsigned long _val[16] ;
+  unsigned long _val[_size] ;
   unsigned long _sum ;
   unsigned long _idx ;
 } ;
